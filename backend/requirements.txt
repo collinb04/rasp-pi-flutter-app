@@ -1,0 +1,15 @@
+Flask == 2.0.1
+Flask-Cors == 3.0.10
+Gunicorn == 22.0.0
+Pillow == 10.2.0
+Werkzeug == 2.0
+itsdangerous==2.0
+click==7.1.2
+Typing
+Pandas == 2.0.1
+piexif == 1.1.3
+tensorflow == 2.16.1
+opencv-python == 4.8.0.74
+numpy == 1.24.3
+python-dotenv == 1.0.1
+scikit-learn==1.6.1

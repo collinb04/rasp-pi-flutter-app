@@ -1,0 +1,13 @@
+[Unit]
+Description=Oak Wilt Service
+After=network.target
+
+[Service]
+User=ubuntu
+Group=www-data
+WorkingDirectory=/home/ubuntu/OakWilt/backend
+Environment="PATH=/home/ubuntu/OakWilt/backend/env/bin"
+ExecStart=/home/ubuntu/OakWilt/backend/env/bin/gunicorn --workers 3 --bind unix:main.sock -m 007 wsgi:app
+
+[Install]
+WantedBy=multi-user.target

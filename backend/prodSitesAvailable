@@ -1,0 +1,9 @@
+server {
+  listen 80;
+  server_name ec2-3-144-198-245.us-east-2.compute.amazonaws.com www.ec2-3-144-198-245.us-east-2.compute.amazonaws.com;
+
+  location / {
+    include proxy_params;
+    proxy_pass http://unix:/home/ubuntu/OakWilt/backend/main.sock;
+  }
+}
