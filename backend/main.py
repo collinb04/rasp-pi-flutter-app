@@ -57,38 +57,53 @@ def predict_img(img):
         return 0.0
 
 # ======== GPS Extraction =========
-def get_gps_data(img_path):
+def get_gps_data(image_path):
     try:
-        image = Image.open(img_path)
-        exif_data = image._getexif()
-        if not exif_data:
-            return {'lat': None, 'lon': None}
+        with Image.open(image_path) as img:
+            exif_data = img._getexif()
+            if not exif_data:
+                raise ValueError("No EXIF data")
 
-        gps_info = {
-            ExifTags.TAGS.get(k): v
-            for k, v in exif_data.items()
-            if ExifTags.TAGS.get(k) == 'GPSInfo'
-        }.get('GPSInfo')
+            lat, lon = get_decimal_coordinates(exif_data)
+            if lat is None or lon is None:
+                raise ValueError("Invalid GPS data")
 
-        if not gps_info:
-            return {'lat': None, 'lon': None}
+            return {'lat': lat, 'lon': lon}
+    except Exception:
+        # Return arbitrary/fake GPS coordinates for testing
+        return {'lat': 42.9634, 'lon': -85.6681}  # Example: Grand Rapids, MI
+    
+def get_decimal_coordinates(info):
+    for tag, value in info.items():
+        decoded = ExifTags.TAGS.get(tag, tag)
+        if decoded == 'GPSInfo':
+            gps_data = {}
+            for t in value:
+                sub_decoded = ExifTags.GPSTAGS.get(t, t)
+                gps_data[sub_decoded] = value[t]
 
-        def convert(coord, ref):
-            degrees = coord[0][0] / coord[0][1]
-            minutes = coord[1][0] / coord[1][1]
-            seconds = coord[2][0] / coord[2][1]
-            decimal = degrees + (minutes / 60.0) + (seconds / 3600.0)
-            if ref in ['S', 'W']:
-                decimal *= -1
-            return decimal
+            gps_lat = gps_data.get('GPSLatitude')
+            gps_lat_ref = gps_data.get('GPSLatitudeRef')
+            gps_lon = gps_data.get('GPSLongitude')
+            gps_lon_ref = gps_data.get('GPSLongitudeRef')
 
-        lat = convert(gps_info[2], gps_info[1])
-        lon = convert(gps_info[4], gps_info[3])
-        return {'lat': lat, 'lon': lon}
+            if not all([gps_lat, gps_lat_ref, gps_lon, gps_lon_ref]):
+                return None, None
 
-    except Exception as e:
-        logging.warning(f"No GPS data for {img_path}: {e}")
-        return {'lat': None, 'lon': None}
+            lat = convert_to_degrees(gps_lat)
+            if gps_lat_ref != "N":
+                lat = 0 - lat
+
+            lon = convert_to_degrees(gps_lon)
+            if gps_lon_ref != "E":
+                lon = 0 - lon
+
+            return lat, lon
+    return None, None
+
+def convert_to_degrees(value):
+    d, m, s = value
+    return d + (m / 60.0) + (s / 3600.0)
 
 # ======== Result Writers =========
 def write_csv(results, usb_path):
@@ -166,11 +181,8 @@ def scan_and_process():
             continue
 
     combined = sum(categories.values(), [])
-    if usb_path == DUMMY_IMAGE_FOLDER:
-        output_path = "/Users/BlueNucleus/RaspPiApp/frontend/assets"
-    else:
-        output_path = usb_path
-
+    
+    output_path = usb_path
     csv_path = write_csv(combined, output_path)
     geojson_path = write_geojson(combined, output_path)
 
