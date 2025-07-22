@@ -166,8 +166,13 @@ def scan_and_process():
             continue
 
     combined = sum(categories.values(), [])
-    csv_path = write_csv(combined, usb_path)
-    geojson_path = write_geojson(combined, usb_path)
+    if usb_path == DUMMY_IMAGE_FOLDER:
+        output_path = "/Users/BlueNucleus/RaspPiApp/frontend/assets"
+    else:
+        output_path = usb_path
+
+    csv_path = write_csv(combined, output_path)
+    geojson_path = write_geojson(combined, output_path)
 
     # Send combined data as JSON for frontend to use directly
     return jsonify({
