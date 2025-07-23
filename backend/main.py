@@ -47,14 +47,12 @@ def scan_usb_for_images(usb_path):
 
 # ======== Prediction =========
 def predict_img(img):
-    try:
-        img = cv2.resize(img, (224, 224)) / 255.0
-        img = np.expand_dims(img, axis=0)
-        pred = model.predict(img)[0][0]
-        return pred
-    except Exception as e:
-        logging.error(f"Prediction failed: {e}")
-        return 0.0
+    img_resized = cv2.resize(img, (256, 256))
+    img_normalized = img_resized / 255.0
+    img_expanded = np.expand_dims(img_normalized, axis=0)
+
+    prediction = model.predict(img_expanded)
+    return prediction[0][0]
 
 # ======== GPS Extraction =========
 def get_gps_data(image_path):
