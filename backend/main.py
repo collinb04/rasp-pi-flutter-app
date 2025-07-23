@@ -16,7 +16,6 @@ logging.basicConfig(level=logging.INFO)
 
 DUMMY_IMAGE_FOLDER = "/Users/BlueNucleus/Downloads/OW test pictures"
 
-
 # ======== Model Loading =========
 MODEL_PATH = "oak_wilt_demo3.h5"
 model = tf.keras.models.load_model(MODEL_PATH)
