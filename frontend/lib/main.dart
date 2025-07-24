@@ -3,9 +3,81 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/services.dart';
 import 'package:csv/csv.dart';
 import 'dart:convert';
-import 'package:url_launcher/url_launcher.dart';
+import 'dart:io';
 
-final String baseUrl = 'http://localhost:5001/images/';
+// Constants
+class AppConstants {
+  static const String baseUrl = 'http://localhost:5001';
+  static const int pageSize = 20;
+  static const String appTitle = 'Edge Forestry';
+  static const Color primaryGreen = Color.fromARGB(255, 0, 47, 10);
+  static const Color darkGreen = Color(0xFF388E3C);
+}
+
+// Models
+class ImageResult {
+  final String filename;
+  final String classification;
+  final String prediction;
+  final String? latitude;
+  final String? longitude;
+
+  ImageResult({
+    required this.filename,
+    required this.classification,
+    required this.prediction,
+    this.latitude,
+    this.longitude,
+  });
+
+  factory ImageResult.fromJson(Map<String, dynamic> json) {
+    return ImageResult(
+      filename: json['filename']?.toString() ?? '',
+      classification: json['classification']?.toString() ?? '',
+      prediction: json['prediction']?.toString() ?? '',
+      latitude: json['latitude']?.toString(),
+      longitude: json['longitude']?.toString(),
+    );
+  }
+
+  bool get hasGpsData => latitude != null && longitude != null;
+}
+
+// Services
+class ApiService {
+  static Future<List<ImageResult>> scanAndProcess() async {
+    final uri = Uri.parse('${AppConstants.baseUrl}/scan-and-process');
+    final response = await http.get(uri);
+    
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final List allResults = data['all_results'];
+      return allResults.map((item) => ImageResult.fromJson(item)).toList();
+    } else {
+      throw HttpException('Error ${response.statusCode}: ${response.body}');
+    }
+  }
+
+  static Future<String> testConnection() async {
+    final response = await http.get(Uri.parse('${AppConstants.baseUrl}/list-images'));
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return 'Server connected! Found ${data['mapping_keys']?.length ?? 0} images.';
+    } else {
+      throw HttpException('Server responded with ${response.statusCode}');
+    }
+  }
+
+  static String getImageUrl(String filename) {
+    final encodedFilename = Uri.encodeComponent(filename);
+    return '${AppConstants.baseUrl}/images/$encodedFilename';
+  }
+
+  static String getAlternativeImageUrl(String filename) {
+    final encodedFilename = Uri.encodeComponent(filename);
+    return '${AppConstants.baseUrl}/get-image?name=$encodedFilename';
+  }
+}
 
 Future<List<Map<String, String>>> loadCsvData() async {
   final raw = await rootBundle.loadString('assets/results.csv');
@@ -28,38 +100,82 @@ void main() async {
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
+  
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Raspberry Pi File Uploader',
+      title: AppConstants.appTitle,
       debugShowCheckedModeBanner: false,
-      home: FileUploadPage(),
+      theme: ThemeData(
+        primarySwatch: Colors.green,
+        appBarTheme: AppBarTheme(
+          backgroundColor: Colors.green[700],
+          foregroundColor: Colors.white,
+          elevation: 4,
+          centerTitle: true,
+        ),
+      ),
+      home: const FileUploadPage(),
     );
   }
 }
 
 class FileUploadPage extends StatefulWidget {
   const FileUploadPage({super.key});
+  
   @override
   FileUploadPageState createState() => FileUploadPageState();
 }
 
 class FileUploadPageState extends State<FileUploadPage> {
   String? _statusMessage;
+  bool _isLoading = false;
+
+  Future<void> _scanAndAnalyze() async {
+    setState(() {
+      _statusMessage = null;
+      _isLoading = true;
+    });
+
+    try {
+      final results = await ApiService.scanAndProcess();
+      
+      if (!mounted) return;
+      
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ResultsPage(results: results),
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _statusMessage = e is HttpException ? e.message : 'Request failed: $e';
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Edge Forestry',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w500, fontSize: 24)),
-        backgroundColor: Colors.green[700],
-        centerTitle: true,
-        elevation: 4,
+        title: const Text(
+          AppConstants.appTitle,
+          style: TextStyle(fontWeight: FontWeight.w500, fontSize: 24),
+        ),
       ),
       backgroundColor: Colors.white,
       body: Stack(
         children: [
+          // Background image
           Align(
             alignment: Alignment.bottomCenter,
             child: Image.asset(
@@ -67,8 +183,11 @@ class FileUploadPageState extends State<FileUploadPage> {
               fit: BoxFit.cover,
               width: double.infinity,
               height: 400,
+              errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
             ),
           ),
+          
+          // Main content
           Column(
             children: [
               const Spacer(flex: 1),
@@ -83,7 +202,7 @@ class FileUploadPageState extends State<FileUploadPage> {
                         style: TextStyle(
                           fontSize: 46,
                           fontWeight: FontWeight.w600,
-                          color: Color.fromARGB(255, 0, 47, 10),
+                          color: AppConstants.primaryGreen,
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -92,74 +211,41 @@ class FileUploadPageState extends State<FileUploadPage> {
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w400,
-                          color: Color.fromARGB(255, 0, 47, 10),
+                          color: AppConstants.primaryGreen,
                         ),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 30),
+                      
+                      // Main scan button
                       ElevatedButton(
-                        onPressed: () async {
-                          setState(() {
-                            _statusMessage = null;
-                          });
-
-                          BuildContext? dialogContext;
-                          showDialog(
-                            context: context,
-                            barrierDismissible: false,
-                            builder: (BuildContext context) {
-                              dialogContext = context;
-                              return const Center(child: CircularProgressIndicator(color: Colors.green));
-                            },
-                          );
-
-                          try {
-                            final uri = Uri.parse('http://localhost:5001/scan-and-process');
-                            final response = await http.get(uri);
-
-                            if (!mounted) return;
-
-                            if (dialogContext != null) {
-                              Navigator.of(dialogContext!).pop();
-                            }
-
-                            if (response.statusCode == 200) {
-                              final data = jsonDecode(response.body);
-                              final List allResults = data['all_results'];
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (context) => ResultsPage(results: allResults)),
-                              );
-                            } else {
-                              setState(() {
-                                _statusMessage = 'Error ${response.statusCode}: ${response.body}';
-                              });
-                            }
-                          } catch (e) {
-                            if (dialogContext != null) {
-                              Navigator.of(dialogContext!).pop();
-                            }
-                            setState(() {
-                              _statusMessage = 'Request failed: $e';
-                            });
-                          }
-                        },
+                        onPressed: _isLoading ? null : _scanAndAnalyze,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.green[700],
                           padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 24),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           elevation: 6,
                         ),
-                        child: const Text(
-                          'Scan & Analyze',
-                          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
-                        ),
+                        child: _isLoading
+                            ? const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Text(
+                                'Scan & Analyze',
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
                       ),
-                      if (_statusMessage != null) ...[
-                        const SizedBox(height: 20),
-                        Text(_statusMessage!,
-                            style: const TextStyle(color: Colors.black87), textAlign: TextAlign.center),
-                      ],
+                      
+                      const SizedBox(height: 16),
                     ],
                   ),
                 ),
@@ -174,7 +260,7 @@ class FileUploadPageState extends State<FileUploadPage> {
 }
 
 class ResultsPage extends StatefulWidget {
-  final List results;
+  final List<ImageResult> results;
   const ResultsPage({super.key, required this.results});
 
   @override
@@ -182,123 +268,293 @@ class ResultsPage extends StatefulWidget {
 }
 
 class ResultsPageState extends State<ResultsPage> {
-  static const int pageSize = 20;
   int currentPage = 0;
   String selectedFilter = 'All';
-  late final List<String> filterOptions;
-late Map<String, String?> filterMap;
-
-@override
-void initState() {
-  super.initState();
-  filterMap = {
-    'All': null, // special case: show all
+  
+  static const Map<String, String?> filterMap = {
+    'All': null,
     'No Condition: <70%': 'DOES NOT HAVE OAK WILT',
     'Possibility: 70-90%': 'POSSIBILITY OF OAK WILT',
     'High Chance: 90-99.5%': "THERE'S A HIGH CHANCE OF OAK WILT",
     'Has Condition: >99.5%': 'THIS PICTURE HAS OAK WILT',
   };
 
-  selectedFilter = 'All';
-}
-
-  List get filteredResults {
+  List<ImageResult> get filteredResults {
     final selectedValue = filterMap[selectedFilter];
-
     if (selectedValue == null) return widget.results;
-
-    return widget.results.where((item) {
-      return item['classification'] == selectedValue;
-    }).toList();
+    return widget.results.where((item) => item.classification == selectedValue).toList();
   }
 
-
-  List get currentPageItems {
+  List<ImageResult> get currentPageItems {
     final results = filteredResults;
-    final start = currentPage * pageSize;
-    final end = (start + pageSize) > results.length ? results.length : (start + pageSize);
+    final start = currentPage * AppConstants.pageSize;
+    final end = (start + AppConstants.pageSize) > results.length 
+        ? results.length 
+        : (start + AppConstants.pageSize);
     return results.sublist(start, end);
   }
 
-  int get totalPages => (filteredResults.length / pageSize).ceil();
+  int get totalPages => (filteredResults.length / AppConstants.pageSize).ceil();
+
+  void _showImagePopup(BuildContext context, ImageResult result) {
+    final imageUrl = ApiService.getImageUrl(result.filename);
+    final alternativeUrl = ApiService.getAlternativeImageUrl(result.filename);
+
+    showDialog(
+      context: context,
+      builder: (_) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.green[700],
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      result.filename,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        fontSize: 16,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close, color: Colors.white),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
+              ),
+            ),
+            
+            // Image
+            Container(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.7,
+                maxWidth: MediaQuery.of(context).size.width * 0.9,
+              ),
+              child: ClipRRect(
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(16),
+                  bottomRight: Radius.circular(16),
+                ),
+                child: _buildImageWidget(imageUrl, alternativeUrl, result.filename),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImageWidget(String primaryUrl, String alternativeUrl, String filename) {
+    return Image.network(
+      primaryUrl,
+      fit: BoxFit.contain,
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+        return Container(
+          height: 200,
+          child: Center(
+            child: CircularProgressIndicator(
+              value: loadingProgress.expectedTotalBytes != null
+                  ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                  : null,
+              color: Colors.green[700],
+            ),
+          ),
+        );
+      },
+      errorBuilder: (context, error, stackTrace) {
+        // Try alternative URL
+        return Image.network(
+          alternativeUrl,
+          fit: BoxFit.contain,
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return Container(
+              height: 200,
+              child: const Center(
+                child: CircularProgressIndicator(color: Colors.green),
+              ),
+            );
+          },
+          errorBuilder: (context, altError, altStackTrace) {
+            return Container(
+              height: 200,
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    size: 48,
+                    color: Colors.red[300],
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Image failed to load',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'File: $filename',
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          'Edge Forestry',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w500, fontSize: 24),
+          AppConstants.appTitle,
+          style: TextStyle(fontWeight: FontWeight.w500, fontSize: 24),
         ),
-        backgroundColor: Colors.green[700],
-        centerTitle: true,
-        elevation: 4,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
+            // Title
             const Center(
               child: Text(
                 'Results',
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.w600,
-                  color: Color.fromARGB(255, 0, 47, 10),
+                  color: AppConstants.primaryGreen,
                 ),
               ),
             ),
             const SizedBox(height: 16),
-            DropdownButton<String>(
-              value: selectedFilter,
-              isExpanded: true,
-              items: filterMap.keys.map((label) {
-                return DropdownMenuItem<String>(
-                  value: label,
-                  child: Text(label),
-                );
-              }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  selectedFilter = value!;
-                  currentPage = 0;
-                });
-              },
+            
+            // Filter dropdown
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey[300]!),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: DropdownButton<String>(
+                value: selectedFilter,
+                isExpanded: true,
+                underline: const SizedBox.shrink(),
+                items: filterMap.keys.map((label) {
+                  return DropdownMenuItem<String>(
+                    value: label,
+                    child: Text(label),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    selectedFilter = value!;
+                    currentPage = 0;
+                  });
+                },
+              ),
             ),
-            const SizedBox(height: 6),
-            Text('${filteredResults.length} result(s)'),
+            
+            const SizedBox(height: 8),
+            Text(
+              '${filteredResults.length} result(s)',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w500,
+              ),
+            ),
             const SizedBox(height: 12),
+            
+            // Results list
             Expanded(
               child: ListView.builder(
-                itemCount: filteredResults.length,
+                itemCount: currentPageItems.length,
                 itemBuilder: (context, index) {
-                  final item = filteredResults[index];
-                  final imageUrl = '$baseUrl${item['filename']}';
-
+                  final item = currentPageItems[index];
                   return Card(
-                    margin: const EdgeInsets.symmetric(vertical: 8),
-                    child: ListTile(
-                      title: GestureDetector(
-                        onTap: () async {
-                          if (await canLaunchUrl(Uri.parse(imageUrl))) {
-                            await launchUrl(Uri.parse(imageUrl));
-                          } else {
-                            throw 'Could not launch $imageUrl';
-                          }
-                        },
-                        child: Text(
-                          item['filename'],
-                          style: const TextStyle(
-                            color: Colors.blue,
-                            decoration: TextDecoration.underline,
-                          ),
-                        ),
-                      ),
-                      subtitle: Text(
-                        '${item['classification']} - ${item['prediction']}',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Color.fromARGB(255, 0, 47, 10),
+                    margin: const EdgeInsets.symmetric(vertical: 6),
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    child: InkWell(
+                      onTap: () => _showImagePopup(context, item),
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Filename
+                            Text(
+                              item.filename,
+                              style: const TextStyle(
+                                color: Colors.blue,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            
+                            // Classification and prediction
+                            Text(
+                              '${item.classification} - ${item.prediction}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: AppConstants.primaryGreen,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            
+                            // GPS coordinates
+                            Row(
+                              children: [
+                                Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: item.hasGpsData
+                                      ? Text(
+                                          'Lat: ${item.latitude}, Lon: ${item.longitude}',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey[600],
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        )
+                                      : Text(
+                                          'No GPS data available',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontStyle: FontStyle.italic,
+                                            color: Colors.grey[600],
+                                          ),
+                                        ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -306,20 +562,40 @@ void initState() {
                 },
               ),
             ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                ElevatedButton(
-                  onPressed: currentPage > 0 ? () => setState(() => currentPage--) : null,
-                  child: const Text('Previous'),
-                ),
-                Text('Page ${currentPage + 1} of $totalPages'),
-                ElevatedButton(
-                  onPressed: currentPage < totalPages - 1 ? () => setState(() => currentPage++) : null,
-                  child: const Text('Next'),
-                ),
-              ],
-            ),
+            
+            // Pagination
+            if (totalPages > 1) ...[
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  ElevatedButton(
+                    onPressed: currentPage > 0 
+                        ? () => setState(() => currentPage--) 
+                        : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green[700],
+                      foregroundColor: Colors.white,
+                    ),
+                    child: const Text('Previous'),
+                  ),
+                  Text(
+                    'Page ${currentPage + 1} of $totalPages',
+                    style: const TextStyle(fontWeight: FontWeight.w500),
+                  ),
+                  ElevatedButton(
+                    onPressed: currentPage < totalPages - 1 
+                        ? () => setState(() => currentPage++) 
+                        : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green[700],
+                      foregroundColor: Colors.white,
+                    ),
+                    child: const Text('Next'),
+                  ),
+                ],
+              ),
+            ],
           ],
         ),
       ),
