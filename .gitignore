@@ -59,6 +59,5 @@ instance/
 *.db
 
 # Tensorflow / Keras model cache
-*.h5
 *.hdf5
 
