@@ -10,6 +10,7 @@ import pandas as pd
 import json
 import logging
 from flask_cors import CORS 
+import time
 
 app = Flask(__name__)
 CORS(app)
@@ -19,7 +20,8 @@ logging.basicConfig(level=logging.ERROR)
 
 # Configuration
 DUMMY_IMAGE_FOLDER = "/Users/BlueNucleus/Downloads/OW test pictures"
-MODEL_PATH = "oak_wilt_demo3.h5"
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = os.path.join(SCRIPT_DIR, "oak_wilt_demo3.h5")
 DISEASE = "Oak Wilt"
 
 # Global variables
@@ -52,18 +54,35 @@ def find_usb_mount():
     return None
 
 def scan_usb_for_images(usb_path):
-    """Scan USB drive for valid image files"""
+    """Scan USB drive for valid image files modified within last 48 hours (limit 100)"""
     valid_extensions = [".jpg", ".jpeg", ".png", ".gif"]
     image_files = []
-    
+    now = time.time()
+    time_since_upload = 2 * 365 * 24 * 60 * 60  # Approximate 2 years
+    cutoff = now - time_since_upload
+
     for root, _, files in os.walk(usb_path):
         for file in files:
             if os.path.splitext(file)[-1].lower() in valid_extensions:
                 full_path = os.path.join(root, file)
-                image_files.append(full_path)
-                image_path_map[file] = full_path
-    
-    return image_files
+                try:
+                    mtime = os.path.getmtime(full_path)
+                    if mtime >= cutoff:
+                        image_files.append((mtime, full_path))
+                except Exception as e:
+                    logging.error(f"Error accessing file {full_path}: {e}")
+                    continue
+
+    # Sort by modification time (newest first) and keep only the latest 100
+    image_files.sort(reverse=True)
+    recent_paths = [path for _, path in image_files[:100]]
+
+    # Update image_path_map
+    for path in recent_paths:
+        filename = os.path.basename(path)
+        image_path_map[filename] = path
+
+    return recent_paths
 
 # ======== Prediction =========
 def predict_image(img):
@@ -325,8 +344,6 @@ def list_images():
     """List available images for connection testing"""
     try:
         usb_path = find_usb_mount()
-        if not usb_path:
-            usb_path = DUMMY_IMAGE_FOLDER
         
         return jsonify({
             "usb_path": usb_path,
