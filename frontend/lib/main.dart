@@ -216,7 +216,21 @@ class FileUploadPageState extends State<FileUploadPage> {
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 30),
-                      
+
+                      if (_statusMessage != null) ...[
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 12.0),
+                          child: Text(
+                            _statusMessage!,
+                            style: const TextStyle(
+                              color: Colors.red,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ],
+
                       // Main scan button
                       ElevatedButton(
                         onPressed: _isLoading ? null : _scanAndAnalyze,
@@ -367,7 +381,7 @@ class ResultsPageState extends State<ResultsPage> {
       fit: BoxFit.contain,
       loadingBuilder: (context, child, loadingProgress) {
         if (loadingProgress == null) return child;
-        return Container(
+        return SizedBox(
           height: 200,
           child: Center(
             child: CircularProgressIndicator(
@@ -386,7 +400,7 @@ class ResultsPageState extends State<ResultsPage> {
           fit: BoxFit.contain,
           loadingBuilder: (context, child, loadingProgress) {
             if (loadingProgress == null) return child;
-            return Container(
+            return SizedBox(
               height: 200,
               child: const Center(
                 child: CircularProgressIndicator(color: Colors.green),
