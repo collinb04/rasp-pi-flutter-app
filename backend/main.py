@@ -42,15 +42,9 @@ load_model()
 # ======== USB Utilities =========
 def find_usb_mount():
     """Find USB mount point on Raspberry Pi"""
-    media_dir = "/media/edgeforestry/" # SD card default directory
-    if not os.path.exists(media_dir):
-        if not os.path.exists(media_dir):
-            return jsonify("No /media/edgeforestry/ directory found.")
-
-    for sub in os.listdir(media_dir):
-        usb_path = os.path.join(media_dir, sub)
-        if os.path.ismount(usb_path):
-            return usb_path
+    usb_path = "/media/edgeforestry/boot/" # SD card default directory
+    if os.path.exists(usb_path) and os.path.ismount(usb_path):
+        return usb_path
     return None
 
 def scan_usb_for_images(usb_path):
@@ -63,6 +57,10 @@ def scan_usb_for_images(usb_path):
 
     for root, _, files in os.walk(usb_path):
         for file in files:
+            if '/.' in root or root.endswith('.Trashes'):
+                continue
+            if file.startswith("._") or file.startswith('.'):
+                continue
             if os.path.splitext(file)[-1].lower() in valid_extensions:
                 full_path = os.path.join(root, file)
                 try:
@@ -81,6 +79,12 @@ def scan_usb_for_images(usb_path):
     for path in recent_paths:
         filename = os.path.basename(path)
         image_path_map[filename] = path
+        
+    print("---- FILES FOUND DURING SCAN ----")
+    for mtime, path in image_files:
+        print(f"{mtime}: {path}")
+        print("---------------------------------")
+
 
     return recent_paths
 
@@ -217,7 +221,7 @@ def scan_and_process():
         global image_path_map
         image_path_map.clear()
         
-        # Find USB or use dummy folder
+        # Find USB 
         usb_path = find_usb_mount()
         if not usb_path:
             return jsonify({"error": "No USB path found"}), 404
@@ -237,16 +241,22 @@ def scan_and_process():
         }
 
         # Process each image
+        valid_image_map = {}
+
+        # Process each image
         for path in image_paths:
             try:
                 img = cv2.imread(path)
-                if img is None:
+                if img is None or img.size == 0 or len(img.shape) != 3:
                     continue
-                    
+                
                 prediction = predict_image(img) * 100
                 gps = get_gps_data(path)
                 filename = os.path.basename(path)
                 category = classify_prediction(prediction)
+                
+                logging.error(f"Processed file: {filename} with prediction: {prediction:.2f}%")
+
 
                 record = {
                     "filename": filename,
@@ -255,10 +265,16 @@ def scan_and_process():
                     "latitude": gps["lat"],
                     "longitude": gps["lon"]
                 }
+                
                 categories[category].append(record)
+                valid_image_map[filename] = path
+
             except Exception as e:
                 logging.error(f"Failed to process image {path}: {e}")
                 continue
+
+        image_path_map = valid_image_map  # Only use successful mappings
+
 
         # Combine all results
         combined = sum(categories.values(), [])
