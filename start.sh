@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # === CONFIGURATION ===
-PROJECT_DIR="/Users/BlueNucleus/RaspPiApp"
+PROJECT_DIR="/media/edgeforestry/"
 BACKEND_SCRIPT="backend/main.py"
 PYTHON_ENV="$PROJECT_DIR/venv"
-FLUTTER_CMD="/home/pi/flutter/bin/flutter"
+FLUTTER_CMD="/home/edgeforestry/flutter/bin/flutter"
 CHROME_PATH="/usr/bin/chromium-browser"
 DISPLAY_NUMBER=":0"
 BACKEND_PORT=5001
@@ -34,7 +34,7 @@ while ! nc -z localhost 5001; do
 done
 
 echo "[+] Backend is up"
-cd /Users/BlueNucleus/RaspPiApp/frontend || exit 1
+cd /media/edgeforestry/rasp-pi-flutter-app/frontend || exit 1
 nohup flutter run -d chrome --release --web-port=8080 > flutter.log 2>&1 &
 
 echo "[✓] App started successfully"

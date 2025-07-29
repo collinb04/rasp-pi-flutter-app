@@ -45,6 +45,7 @@ class ImageResult {
 
 // Services
 class ApiService {
+  // scan and process server- contacts backend and awaits results to parse and output
   static Future<List<ImageResult>> scanAndProcess() async {
     final uri = Uri.parse('${AppConstants.baseUrl}/scan-and-process');
     final response = await http.get(uri);
@@ -58,16 +59,7 @@ class ApiService {
     }
   }
 
-  static Future<String> testConnection() async {
-    final response = await http.get(Uri.parse('${AppConstants.baseUrl}/list-images'));
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      return 'Server connected! Found ${data['mapping_keys']?.length ?? 0} images.';
-    } else {
-      throw HttpException('Server responded with ${response.statusCode}');
-    }
-  }
-
+  // retrieves image url for image popups
   static String getImageUrl(String filename) {
     final encodedFilename = Uri.encodeComponent(filename);
     return '${AppConstants.baseUrl}/images/$encodedFilename';
@@ -79,6 +71,7 @@ class ApiService {
   }
 }
 
+// converts CSV data to a list in order to be parsed into result cards
 Future<List<Map<String, String>>> loadCsvData() async {
   final raw = await rootBundle.loadString('assets/results.csv');
   final rows = const CsvToListConverter(eol: '\n').convert(raw);
@@ -94,13 +87,14 @@ Future<List<Map<String, String>>> loadCsvData() async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]); // fixated screen orientation
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
   
+  // base page design 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -128,9 +122,10 @@ class FileUploadPage extends StatefulWidget {
 }
 
 class FileUploadPageState extends State<FileUploadPage> {
-  String? _statusMessage;
+  String? _statusMessage; // feedback output
   bool _isLoading = false;
 
+  // calls scan and process to connect to backend
   Future<void> _scanAndAnalyze() async {
     setState(() {
       _statusMessage = null;
@@ -162,7 +157,8 @@ class FileUploadPageState extends State<FileUploadPage> {
       }
     }
   }
-
+  
+  // home page build
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -217,6 +213,7 @@ class FileUploadPageState extends State<FileUploadPage> {
                       ),
                       const SizedBox(height: 30),
 
+                      // error messages displayed- full stack connection complications
                       if (_statusMessage != null) ...[
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 12.0),
@@ -285,6 +282,7 @@ class ResultsPageState extends State<ResultsPage> {
   int currentPage = 0;
   String selectedFilter = 'All';
   
+  // maps displayed categories to proper filtering
   static const Map<String, String?> filterMap = {
     'All': null,
     'No Condition: <70%': 'DOES NOT HAVE OAK WILT',
@@ -293,12 +291,14 @@ class ResultsPageState extends State<ResultsPage> {
     'Has Condition: >99.5%': 'THIS PICTURE HAS OAK WILT',
   };
 
+  // filters results to display desired category
   List<ImageResult> get filteredResults {
     final selectedValue = filterMap[selectedFilter];
     if (selectedValue == null) return widget.results;
     return widget.results.where((item) => item.classification == selectedValue).toList();
   }
 
+  // determines amount of cards on a page
   List<ImageResult> get currentPageItems {
     final results = filteredResults;
     final start = currentPage * AppConstants.pageSize;
@@ -314,6 +314,7 @@ class ResultsPageState extends State<ResultsPage> {
     final imageUrl = ApiService.getImageUrl(result.filename);
     final alternativeUrl = ApiService.getAlternativeImageUrl(result.filename);
 
+    // displays images associated with result card values
     showDialog(
       context: context,
       builder: (_) => Dialog(
@@ -355,7 +356,7 @@ class ResultsPageState extends State<ResultsPage> {
               ),
             ),
             
-            // Image
+            // image container
             Container(
               constraints: BoxConstraints(
                 maxHeight: MediaQuery.of(context).size.height * 0.7,
@@ -439,6 +440,7 @@ class ResultsPageState extends State<ResultsPage> {
     );
   }
 
+  // results page contents(title, filter dropdown, cards, pagination)
   @override
   Widget build(BuildContext context) {
     return Scaffold(

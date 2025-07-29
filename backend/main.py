@@ -19,7 +19,6 @@ CORS(app)
 logging.basicConfig(level=logging.ERROR)
 
 # Configuration
-DUMMY_IMAGE_FOLDER = "/Users/BlueNucleus/Downloads/OW test pictures"
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(SCRIPT_DIR, "oak_wilt_demo3.h5")
 DISEASE = "Oak Wilt"
@@ -43,9 +42,10 @@ load_model()
 # ======== USB Utilities =========
 def find_usb_mount():
     """Find USB mount point on Raspberry Pi"""
-    media_dir = "/media/pi"
+    media_dir = "/media/edgeforestry/" # SD card default directory
     if not os.path.exists(media_dir):
-        return None
+        if not os.path.exists(media_dir):
+            return jsonify("No /media/edgeforestry/ directory found.")
 
     for sub in os.listdir(media_dir):
         usb_path = os.path.join(media_dir, sub)
@@ -198,7 +198,7 @@ def write_geojson(results, output_path):
         return None
 
 def classify_prediction(prediction_percent):
-    """Classify prediction into categories based on percentage"""
+    # Classify prediction into categories based on percentage
     if prediction_percent > 99.5:
         return "THIS PICTURE HAS OAK WILT"
     elif prediction_percent > 90:
@@ -211,7 +211,7 @@ def classify_prediction(prediction_percent):
 # ======== API Endpoints =========
 @app.route("/scan-and-process", methods=["GET"])
 def scan_and_process():
-    """Main endpoint to scan USB and process images"""
+    # Main endpoint to scan USB and process images
     try:
         # Clear previous mappings
         global image_path_map
@@ -220,7 +220,7 @@ def scan_and_process():
         # Find USB or use dummy folder
         usb_path = find_usb_mount()
         if not usb_path:
-            usb_path = DUMMY_IMAGE_FOLDER
+            return jsonify({"error": "No USB path found"}), 404
 
         # Scan for images
         image_paths = scan_usb_for_images(usb_path)
@@ -281,7 +281,7 @@ def scan_and_process():
 
 @app.route('/images/<path:filename>')
 def get_image(filename):
-    """Serve image files from USB drive"""
+    # Serve image files from USB drive
     try:
         decoded_filename = unquote(filename)
         
@@ -300,7 +300,7 @@ def get_image(filename):
         # Fallback: search in USB path
         usb_path = find_usb_mount()
         if not usb_path:
-            usb_path = DUMMY_IMAGE_FOLDER
+            return jsonify({"error": "No USB path found"}), 404
         
         # Try direct path
         direct_path = os.path.join(usb_path, decoded_filename)
@@ -321,7 +321,7 @@ def get_image(filename):
 
 @app.route('/get-image')
 def get_image_simple():
-    """Alternative endpoint for serving images via query parameter"""
+    # Alternative endpoint for serving images via query parameter
     filename = request.args.get('name')
     if not filename:
         return jsonify({"error": "No filename provided"}), 400
@@ -338,22 +338,6 @@ def get_image_simple():
     except Exception as e:
         logging.error(f"Error in get-image: {e}")
         return jsonify({"error": "Error serving image"}), 500
-
-@app.route('/list-images', methods=['GET'])
-def list_images():
-    """List available images for connection testing"""
-    try:
-        usb_path = find_usb_mount()
-        
-        return jsonify({
-            "usb_path": usb_path,
-            "mapping_keys": list(image_path_map.keys()),
-            "dummy_folder_exists": os.path.exists(DUMMY_IMAGE_FOLDER),
-            "dummy_folder_contents": os.listdir(DUMMY_IMAGE_FOLDER) if os.path.exists(DUMMY_IMAGE_FOLDER) else []
-        })
-    except Exception as e:
-        logging.error(f"Error listing images: {e}")
-        return jsonify({"error": "Error listing images"}), 500
 
 @app.errorhandler(404)
 def not_found(error):
