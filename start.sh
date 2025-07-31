@@ -22,7 +22,10 @@ nohup python3 "$BACKEND_SCRIPT" > backend.log 2>&1 &
 
 
 echo "[+] Waiting for backend to initialize..."
-sleep 2
+
+while ! timeout 1 bash -c "echo > /dev/tcp/localhost/5001" 2>/dev/null; do
+	sleep 1
+done
 
 echo "[+] Serving Flutter web app..."
 
