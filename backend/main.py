@@ -41,20 +41,13 @@ load_model()
 
 # ======== USB Utilities =========
 def find_usb_mount():
-    """Find USB mount point on Raspberry Pi"""
-    media_dir = "/media/edgeforestry/" # SD card default directory
-    if not os.path.exists(media_dir):
-        if not os.path.exists(media_dir):
-            return jsonify("No /media/edgeforestry/ directory found.")
-
-    for sub in os.listdir(media_dir):
-        usb_path = os.path.join(media_dir, sub)
-        if os.path.ismount(usb_path):
-            return usb_path
+    # Find USB mount point on Raspberry Pi
+    usb_path = "/media/edgeforestry/boot/" # SD card default directory
+    if os.path.exists(usb_path) and os.path.ismount(usb_path):
+        return usb_path
     return None
 
 def scan_usb_for_images(usb_path):
-    """Scan USB drive for valid image files modified within last 48 hours (limit 100)"""
     valid_extensions = [".jpg", ".jpeg", ".png", ".gif"]
     image_files = []
     now = time.time()
@@ -63,6 +56,10 @@ def scan_usb_for_images(usb_path):
 
     for root, _, files in os.walk(usb_path):
         for file in files:
+            if '/.' in root or root.endswith('.Trashes'):
+                continue
+            if file.startswith("._") or file.startswith('.'):
+                continue
             if os.path.splitext(file)[-1].lower() in valid_extensions:
                 full_path = os.path.join(root, file)
                 try:
@@ -81,12 +78,18 @@ def scan_usb_for_images(usb_path):
     for path in recent_paths:
         filename = os.path.basename(path)
         image_path_map[filename] = path
+        
+    print("---- FILES FOUND DURING SCAN ----")
+    for mtime, path in image_files:
+        print(f"{mtime}: {path}")
+        print("---------------------------------")
+
 
     return recent_paths
 
 # ======== Prediction =========
 def predict_image(img):
-    """Make prediction on image using loaded model"""
+    # Make prediction on image using loaded model
     try:
         img_resized = cv2.resize(img, (256, 256))
         img_normalized = img_resized / 255.0
@@ -100,7 +103,7 @@ def predict_image(img):
 
 # ======== GPS Extraction =========
 def get_gps_data(image_path):
-    """Extract GPS coordinates from image EXIF data"""
+    # Extract GPS coordinates from image EXIF data
     try:
         with Image.open(image_path) as img:
             exif_data = img._getexif()
@@ -116,11 +119,11 @@ def get_gps_data(image_path):
         return get_fallback_gps()
 
 def get_fallback_gps():
-    """Return fallback GPS coordinates when real GPS data is unavailable"""
+    # Return fallback GPS coordinates when real GPS data is unavailable
     return {'lat': 42.9634, 'lon': -85.6681}  # Grand Rapids, MI
 
 def get_decimal_coordinates(exif_info):
-    """Convert GPS EXIF data to decimal coordinates"""
+    # Convert GPS EXIF data to decimal coordinates
     try:
         for tag, value in exif_info.items():
             decoded = ExifTags.TAGS.get(tag, tag)
@@ -152,7 +155,7 @@ def get_decimal_coordinates(exif_info):
     return None, None
 
 def convert_to_degrees(value):
-    """Convert GPS coordinate to decimal degrees"""
+    # Convert GPS coordinate to decimal degrees
     try:
         d, m, s = value
         return d + (m / 60.0) + (s / 3600.0)
@@ -160,10 +163,18 @@ def convert_to_degrees(value):
         return 0.0
 
 # ======== Result Writers =========
+def get_unique_path(directory, base_filename, extension):
+    counter = 1
+    file_path = os.path.join(directory, f"{base_filename}.{extension}")
+    while os.path.exists(file_path):
+        file_path = os.path.join(directory, f"{base_filename}_{counter}.{extension}")
+        counter += 1
+    return file_path
+    
 def write_csv(results, output_path):
-    """Write results to CSV file"""
+    # Write results to CSV file
     try:
-        csv_path = os.path.join(output_path, "results.csv")
+        csv_path = get_unique_path(output_path, "results", "csv")
         pd.DataFrame(results).to_csv(csv_path, index=False)
         return csv_path
     except Exception as e:
@@ -171,7 +182,7 @@ def write_csv(results, output_path):
         return None
 
 def write_geojson(results, output_path):
-    """Write results to GeoJSON file"""
+    # Write results to GeoJSON file
     try:
         geo_features = []
         for item in results:
@@ -189,7 +200,7 @@ def write_geojson(results, output_path):
                     }
                 })
         
-        geojson_path = os.path.join(output_path, "results.geojson")
+        geojson_path = get_unique_path(output_path, "results", "csv")
         with open(geojson_path, "w") as f:
             json.dump({"type": "FeatureCollection", "features": geo_features}, f, indent=2)
         return geojson_path
@@ -217,7 +228,7 @@ def scan_and_process():
         global image_path_map
         image_path_map.clear()
         
-        # Find USB or use dummy folder
+        # Find USB 
         usb_path = find_usb_mount()
         if not usb_path:
             return jsonify({"error": "No USB path found"}), 404
@@ -237,16 +248,22 @@ def scan_and_process():
         }
 
         # Process each image
+        valid_image_map = {}
+
+        # Process each image
         for path in image_paths:
             try:
                 img = cv2.imread(path)
-                if img is None:
+                if img is None or img.size == 0 or len(img.shape) != 3:
                     continue
-                    
+                
                 prediction = predict_image(img) * 100
                 gps = get_gps_data(path)
                 filename = os.path.basename(path)
                 category = classify_prediction(prediction)
+                
+                logging.error(f"Processed file: {filename} with prediction: {prediction:.2f}%")
+
 
                 record = {
                     "filename": filename,
@@ -255,10 +272,16 @@ def scan_and_process():
                     "latitude": gps["lat"],
                     "longitude": gps["lon"]
                 }
+                
                 categories[category].append(record)
+                valid_image_map[filename] = path
+
             except Exception as e:
                 logging.error(f"Failed to process image {path}: {e}")
                 continue
+
+        image_path_map = valid_image_map  # Only use successful mappings
+
 
         # Combine all results
         combined = sum(categories.values(), [])
