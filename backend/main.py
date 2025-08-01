@@ -47,7 +47,7 @@ def find_usb_mount():
         return usb_path
     return None
 
-def scan_usb_for_images(usb_path)
+def scan_usb_for_images(usb_path):
     valid_extensions = [".jpg", ".jpeg", ".png", ".gif"]
     image_files = []
     now = time.time()

@@ -20,11 +20,9 @@ fi
 echo "[+] Starting backend..."
 nohup python3 "$BACKEND_SCRIPT" > backend.log 2>&1 &
 
-
 echo "[+] Waiting for backend to initialize..."
-
-while ! timeout 1 bash -c "echo > /dev/tcp/localhost/5001" 2>/dev/null; do
-	sleep 1
+while ! ss -tuln | grep -q ':5001 '; do
+    sleep 1
 done
 
 echo "[+] Serving Flutter web app..."
@@ -35,9 +33,13 @@ nohup python3 -m http.server 8080 > ../../http_server.log 2>&1 &
 sleep 2
 
 echo "[+] Starting Chromium in kiosk mode..."
-DISPLAY=:0 nohup chromium-browser --kiosk http://localhost:8080 --noerrdialogs --disable-infobars > chromium.log 2>&1 &
+DISPLAY=:0 exec chromium-browser --kiosk http://localhost:8080 --noerrdialogs --disable-infobars --no-sandbox
 
 echo "[✓] App running in kiosk mode"
+
+
+
+
 
 
 
