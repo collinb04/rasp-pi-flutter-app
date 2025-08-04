@@ -331,8 +331,8 @@ class ResultsPageState extends State<ResultsPage> {
                 Image.network(
                   imageUrl,
                   fit: BoxFit.contain,
-                  cacheWidth: 600, 
-                  cacheHeight: 600,
+                  cacheWidth: 400, 
+                  cacheHeight: 400,
                   loadingBuilder: (context, child, loadingProgress) {
                     if (loadingProgress == null) return child;
                     return Container(
@@ -364,8 +364,8 @@ class ResultsPageState extends State<ResultsPage> {
     return Image.network(
       primaryUrl,
       fit: BoxFit.contain,
-      cacheWidth: 600, 
-      cacheHeight: 600,
+      cacheWidth: 400, 
+      cacheHeight: 400,
       loadingBuilder: (context, child, loadingProgress) {
         if (loadingProgress == null) return child;
         return SizedBox(
@@ -385,6 +385,8 @@ class ResultsPageState extends State<ResultsPage> {
         return Image.network(
           alternativeUrl,
           fit: BoxFit.contain,
+          cacheWidth: 400, 
+          cacheHeight: 400,
           loadingBuilder: (context, child, loadingProgress) {
             if (loadingProgress == null) return child;
             return SizedBox(
