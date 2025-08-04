@@ -328,9 +328,11 @@ class ResultsPageState extends State<ResultsPage> {
                   maxWidth: MediaQuery.of(context).size.width * 0.9,
                   maxHeight: MediaQuery.of(context).size.height * 0.9,
                 ),
-                child: Image.network(
+                Image.network(
                   imageUrl,
                   fit: BoxFit.contain,
+                  cacheWidth: 600, 
+                  cacheHeight: 600,
                   loadingBuilder: (context, child, loadingProgress) {
                     if (loadingProgress == null) return child;
                     return Container(
@@ -362,6 +364,8 @@ class ResultsPageState extends State<ResultsPage> {
     return Image.network(
       primaryUrl,
       fit: BoxFit.contain,
+      cacheWidth: 600, 
+      cacheHeight: 600,
       loadingBuilder: (context, child, loadingProgress) {
         if (loadingProgress == null) return child;
         return SizedBox(
