@@ -87,7 +87,6 @@ Future<List<Map<String, String>>> loadCsvData() async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]); // fixated screen orientation
   runApp(const MyApp());
 }
 
