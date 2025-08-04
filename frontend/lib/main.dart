@@ -507,6 +507,7 @@ class ResultsPageState extends State<ResultsPage> {
             // Results list
             Expanded(
               child: ListView.builder(
+                physics: const ClampingScrollPhysics(),
                 itemCount: currentPageItems.length,
                 itemBuilder: (context, index) {
                   final item = currentPageItems[index];
