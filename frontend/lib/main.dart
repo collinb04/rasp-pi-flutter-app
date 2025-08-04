@@ -507,7 +507,7 @@ class ResultsPageState extends State<ResultsPage> {
             // Results list
             Expanded(
               child: ListView.builder(
-                physics: const ClampingScrollPhysics(),
+                physics: const AlwaysScrollableScrollPhysics(),
                 itemCount: currentPageItems.length,
                 itemBuilder: (context, index) {
                   final item = currentPageItems[index];
@@ -515,24 +515,26 @@ class ResultsPageState extends State<ResultsPage> {
                     margin: const EdgeInsets.symmetric(vertical: 6),
                     elevation: 2,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    child: InkWell(
-                      onTap: () => _showImagePopup(context, item),
-                      borderRadius: BorderRadius.circular(8),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Filename
-                            Text(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Filename wrapped with InkWell to make it tappable
+                          InkWell(
+                            onTap: () => _showImagePopup(context, item),
+                            child: Text(
                               item.filename,
                               style: const TextStyle(
                                 color: Colors.blue,
                                 fontSize: 16,
                                 fontWeight: FontWeight.w500,
+                                decoration: TextDecoration.underline, // optional to show it’s clickable
                               ),
                             ),
-                            const SizedBox(height: 8),
+                          ),
+                          
+                          const SizedBox(height: 8),
                             
                             // Classification and prediction
                             Text(
