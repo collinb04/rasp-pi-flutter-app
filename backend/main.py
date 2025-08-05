@@ -301,6 +301,20 @@ def scan_and_process():
     except Exception as e:
         logging.error(f"Error in scan-and-process: {e}")
         return jsonify({"error": "Internal server error"}), 500
+        
+#Resizes images for optimal serving and rendering on frontend
+def serve_resized_image(path):
+    try:
+        with Image.open(path) as img:
+            # Resize while maintaining aspect ratio (e.g., max width 600px)
+            img.thumbnail((600, 600))  # limits width or height to 600px
+            img_io = BytesIO()
+            img.save(img_io, format="JPEG", quality=70)
+            img_io.seek(0)
+            return send_file(img_io, mimetype='image/jpeg')
+    except Exception as e:
+        logging.error(f"Failed to resize image: {e}")
+        return send_file(path)  # fallback to original image
 
 @app.route('/images/<path:filename>')
 def get_image(filename):
@@ -312,13 +326,13 @@ def get_image(filename):
         if decoded_filename in image_path_map:
             full_path = image_path_map[decoded_filename]
             if os.path.exists(full_path):
-                return send_file(full_path)
+                return serve_resized_image(full_path)
         
         # Try original filename in mapping
         if filename in image_path_map:
             full_path = image_path_map[filename]
             if os.path.exists(full_path):
-                return send_file(full_path)
+                return serve_resized_image(full_path)
         
         # Fallback: search in USB path
         usb_path = find_usb_mount()
@@ -328,13 +342,13 @@ def get_image(filename):
         # Try direct path
         direct_path = os.path.join(usb_path, decoded_filename)
         if os.path.exists(direct_path):
-            return send_file(direct_path)
+            return serve_resized_image(direct_path)
         
         # Search recursively
         for root, _, files in os.walk(usb_path):
             if decoded_filename in files:
                 file_path = os.path.join(root, decoded_filename)
-                return send_file(file_path)
+                return serve_resized_image(file_path)
         
         return jsonify({"error": "Image not found"}), 404
         
@@ -355,7 +369,7 @@ def get_image_simple():
         if decoded_filename in image_path_map:
             full_path = image_path_map[decoded_filename]
             if os.path.exists(full_path):
-                return send_file(full_path)
+                return serve_resized_image(full_path)
         
         return jsonify({"error": "Image not found"}), 404
     except Exception as e:
