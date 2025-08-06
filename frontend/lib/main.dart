@@ -478,7 +478,7 @@ class ResultsPageState extends State<ResultsPage> {
                       return Center(
                         child: ConstrainedBox(
                           constraints: const BoxConstraints(
-                            maxWidth: 500, // Set your desired max width here
+                            maxWidth: 400, // Set your desired max width here
                           ),
                         child: Card(
                         margin: const EdgeInsets.symmetric(vertical: 6),
