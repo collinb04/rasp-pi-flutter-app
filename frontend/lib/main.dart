@@ -9,7 +9,7 @@ import 'dart:io';
 class AppConstants {
   static const String baseUrl = 'http://localhost:5001';
   static const int pageSize = 20;
-  static const String appTitle = 'Edge Forestryy';
+  static const String appTitle = 'Edge Forestry';
   static const Color primaryGreen = Color.fromARGB(255, 0, 47, 10);
   static const Color darkGreen = Color(0xFF388E3C);
 }
