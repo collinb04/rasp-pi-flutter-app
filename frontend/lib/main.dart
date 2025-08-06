@@ -464,14 +464,12 @@ class ResultsPageState extends State<ResultsPage> {
                       ),
                     ),
                   )
-                : RawScrollbar(
+                : Scrollbar(
                     controller: _scrollController,
                     thumbVisibility: true, // Always show the thumb
                     trackVisibility: true, // Always show the track
                     thickness: 12, // Make it thicker so it's more visible
                     radius: const Radius.circular(6),
-                    thumbColor: Colors.green[700], // Use a color that matches the theme
-                    trackColor: Colors.grey[300], // Lighter color for the track
                     child: ListView.builder(
                       controller: _scrollController,
                       // Add physics to ensure scrolling works
@@ -498,9 +496,7 @@ class ResultsPageState extends State<ResultsPage> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     // Filename wrapped with InkWell to make it tappable
-                                    InkWell(
-                                      onTap: () => _showImagePopup(context, item),
-                                      child: Text(
+                                      Text(
                                         item.filename,
                                         style: const TextStyle(
                                           color: Colors.blue,
@@ -509,7 +505,7 @@ class ResultsPageState extends State<ResultsPage> {
                                           decoration: TextDecoration.underline,
                                         ),
                                       ),
-                                    ),
+                                  
                                     
                                     const SizedBox(height: 8),
                                       
