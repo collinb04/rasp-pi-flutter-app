@@ -30,7 +30,6 @@ class ImageResult {
     this.longitude,
   });
 
-  // factory constructor to create an ImageResult List from JSON
   factory ImageResult.fromJson(Map<String, dynamic> json) {
     return ImageResult(
       filename: json['filename']?.toString() ?? '',
@@ -281,7 +280,6 @@ class ResultsPage extends StatefulWidget {
 class ResultsPageState extends State<ResultsPage> {
   int currentPage = 0;
   String selectedFilter = 'All';
-  final ScrollController _scrollController = ScrollController();
   
   // maps displayed categories to proper filtering
   static const Map<String, String?> filterMap = {
@@ -312,8 +310,8 @@ class ResultsPageState extends State<ResultsPage> {
   int get totalPages => (filteredResults.length / AppConstants.pageSize).ceil();
 
   void _showImagePopup(BuildContext context, ImageResult result) {
-    final imageUrl = ApiService.getImageUrl(result.filename);
-    final alternativeUrl = ApiService.getAlternativeImageUrl(result.filename);
+  final imageUrl = ApiService.getImageUrl(result.filename);
+  final alternativeUrl = ApiService.getAlternativeImageUrl(result.filename);
 
     showDialog(
       context: context,
@@ -329,7 +327,7 @@ class ResultsPageState extends State<ResultsPage> {
                   maxWidth: MediaQuery.of(context).size.width * 0.9,
                   maxHeight: MediaQuery.of(context).size.height * 0.9,
                 ),
-                child: Image.network(
+                Image.network(
                   imageUrl,
                   fit: BoxFit.contain,
                   cacheWidth: 400, 
@@ -344,10 +342,10 @@ class ResultsPageState extends State<ResultsPage> {
                       ),
                       child: const CircularProgressIndicator(),
                     );
-                    },
-                    errorBuilder: (context, error, stackTrace) {
+                  },
+                  errorBuilder: (context, error, stackTrace) {
                     return Image.network(
-                      alternativeUrl,
+                      fallbackUrl,
                       fit: BoxFit.contain,
                     );
                   },
@@ -360,225 +358,80 @@ class ResultsPageState extends State<ResultsPage> {
     );
   }
 
-  // results page contents(title, filter dropdown, cards, pagination)
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          AppConstants.appTitle,
-          style: TextStyle(fontWeight: FontWeight.w500, fontSize: 24),
-        ),
-      ),
-      body: Stack(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                const Center(
-                  child: Text(
-                'Results',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w600,
-                  color: AppConstants.primaryGreen,
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            
-            // Scroll buttons
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_upward, color: Colors.green, size: 28),
-                  tooltip: 'Scroll Up',
-                  onPressed: () {
-                  final newOffset = (_scrollController.offset - 200).clamp(
-                    0.0,
-                    _scrollController.position.maxScrollExtent,
-                  );
-                  _scrollController.animateTo(
-                    newOffset,
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
-                  );
-                },
-              ),
-                const SizedBox(width: 8),
-                IconButton(
-                  icon: const Icon(Icons.arrow_downward, color: Colors.green, size: 28),
-                  tooltip: 'Scroll Down',
-                  onPressed: () {
-                    final newOffset = (_scrollController.offset + 200).clamp(
-                      0.0,
-                      _scrollController.position.maxScrollExtent,
-                    );
-                    _scrollController.animateTo(
-                      newOffset,
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
-                    );
-                  },
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            
-            // Filter dropdown
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey[300]!),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: DropdownButton<String>(
-                value: selectedFilter,
-                isExpanded: true,
-                underline: const SizedBox.shrink(),
-                items: filterMap.keys.map((label) {
-                  return DropdownMenuItem<String>(
-                    value: label,
-                    child: Text(label),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    selectedFilter = value!;
-                    currentPage = 0;
-                  });
-                },
-              ),
-            ),
-            
-            const SizedBox(height: 8),
-            Text(
-              '${filteredResults.length} result(s)',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 12),
-            
-            // Results list
-            Expanded(
-              child: ListView.builder(
-                controller: _scrollController,
-                physics: const AlwaysScrollableScrollPhysics(),
-                itemCount: currentPageItems.length,
-                itemBuilder: (context, index) {
-                final item = currentPageItems[index];
-                return Card(
-                  margin: const EdgeInsets.symmetric(vertical: 6),
-                  elevation: 2,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        InkWell(
-                          onTap: () => _showImagePopup(context, item),
-                          child: Text(
-                            item.filename,
-                            style: const TextStyle(
-                              color: Colors.blue,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              decoration: TextDecoration.underline, // optional to show it’s clickable
-                            ),
-                          ),
-                        ),
-                        
-                        const SizedBox(height: 8),
-                          
-                          // Classification and prediction
-                          Text(
-                            '${item.classification} - ${item.prediction}',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: AppConstants.primaryGreen,
-                              fontSize: 14,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          
-                          // GPS coordinates
-                          Row(
-                            children: [
-                              Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: item.hasGpsData
-                                    ? Text(
-                                        'Lat: ${item.latitude}, Lon: ${item.longitude}',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.grey[600],
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
-                                      )
-                                    : Text(
-                                        'No GPS data available',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontStyle: FontStyle.italic,
-                                          color: Colors.grey[600],
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-            
-                // Pagination
-                if (totalPages > 1) ...[
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      ElevatedButton(
-                        onPressed: currentPage > 0 
-                            ? () => setState(() => currentPage--) 
-                            : null,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green[700],
-                          foregroundColor: Colors.white,
-                        ),
-                        child: const Text('Previous'),
-                      ),
-                      Text(
-                        'Page ${currentPage + 1} of $totalPages',
-                        style: const TextStyle(fontWeight: FontWeight.w500),
-                      ),
-                      ElevatedButton(
-                        onPressed: currentPage < totalPages - 1 
-                            ? () => setState(() => currentPage++) 
-                            : null,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green[700],
-                          foregroundColor: Colors.white,
-                        ),
-                        child: const Text('Next'),
-                      ),
-                    ],
-                  ),
-                ],
-              ],
+
+  Widget _buildImageWidget(String primaryUrl, String alternativeUrl, String filename) {
+    return Image.network(
+      primaryUrl,
+      fit: BoxFit.contain,
+      cacheWidth: 400, 
+      cacheHeight: 400,
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+        return SizedBox(
+          height: 200,
+          child: Center(
+            child: CircularProgressIndicator(
+              value: loadingProgress.expectedTotalBytes != null
+                  ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                  : null,
+              color: Colors.green[700],
             ),
           ),
-        ],
-      ),
+        );
+      },
+      errorBuilder: (context, error, stackTrace) {
+        // Try alternative URL
+        return Image.network(
+          alternativeUrl,
+          fit: BoxFit.contain,
+          cacheWidth: 400, 
+          cacheHeight: 400,
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return SizedBox(
+              height: 200,
+              child: const Center(
+                child: CircularProgressIndicator(color: Colors.green),
+              ),
+            );
+          },
+          errorBuilder: (context, altError, altStackTrace) {
+            return Container(
+              height: 200,
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    size: 48,
+                    color: Colors.red[300],
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Image failed to load',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'File: $filename',
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
-}
+
+ 
+            
+
+
+  
+         
+
+   
