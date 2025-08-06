@@ -475,7 +475,12 @@ class ResultsPageState extends State<ResultsPage> {
                     itemCount: currentPageItems.length,
                     itemBuilder: (context, index) {
                       final item = currentPageItems[index];
-                      return Card(
+                      return Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(
+                            maxWidth: 500, // Set your desired max width here
+                          ),
+                        child: Card(
                         margin: const EdgeInsets.symmetric(vertical: 6),
                         elevation: 2,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -534,17 +539,19 @@ class ResultsPageState extends State<ResultsPage> {
                                               color: Colors.grey[600],
                                             ),
                                           ),
-                                  ),
-                                ],
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ],
+                            ),
                           ),
-                        ),
-                      );
-                    },
-                  ),
+                        );
+                      },
+                    ),
+                ),
               ),
-            ),
             
             // Pagination
             if (totalPages > 1) ...[
