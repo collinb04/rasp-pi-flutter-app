@@ -30,6 +30,7 @@ class ImageResult {
     this.longitude,
   });
 
+  // factory constructor to create an ImageResult List from JSON
   factory ImageResult.fromJson(Map<String, dynamic> json) {
     return ImageResult(
       filename: json['filename']?.toString() ?? '',
@@ -310,8 +311,8 @@ class ResultsPageState extends State<ResultsPage> {
   int get totalPages => (filteredResults.length / AppConstants.pageSize).ceil();
 
   void _showImagePopup(BuildContext context, ImageResult result) {
-  final imageUrl = ApiService.getImageUrl(result.filename);
-  final alternativeUrl = ApiService.getAlternativeImageUrl(result.filename);
+    final imageUrl = ApiService.getImageUrl(result.filename);
+    final alternativeUrl = ApiService.getAlternativeImageUrl(result.filename);
 
     showDialog(
       context: context,
@@ -326,6 +327,11 @@ class ResultsPageState extends State<ResultsPage> {
                 constraints: BoxConstraints(
                   maxWidth: MediaQuery.of(context).size.width * 0.9,
                   maxHeight: MediaQuery.of(context).size.height * 0.9,
+                ),
+                child: Image.network(
+                  imageUrl,
+                  errorBuilder: (context, error, stackTrace) => Image.network(alternativeUrl),
+                  fit: BoxFit.contain,
                 ),
               ),
             ),
