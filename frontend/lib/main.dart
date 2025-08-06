@@ -312,53 +312,96 @@ class ResultsPageState extends State<ResultsPage> {
   int get totalPages => (filteredResults.length / AppConstants.pageSize).ceil();
 
   void _showImagePopup(BuildContext context, ImageResult result) {
-    final imageUrl = ApiService.getImageUrl(result.filename);
-    final alternativeUrl = ApiService.getAlternativeImageUrl(result.filename);
+  final imageUrl = ApiService.getImageUrl(result.filename);
+  final alternativeUrl = ApiService.getAlternativeImageUrl(result.filename);
 
-    showDialog(
-      context: context,
-      builder: (_) => Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.all(16),
-        child: Center(
-          child: InteractiveViewer(
-            child: ClipRRect(
+  showDialog(
+    context: context,
+    builder: (_) => Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.all(16),
+      child: Center(
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.of(context).size.width * 0.9,
+              maxHeight: MediaQuery.of(context).size.height * 0.9,
+            ),
+            decoration: BoxDecoration(
+              color: Colors.white,
               borderRadius: BorderRadius.circular(16),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxWidth: MediaQuery.of(context).size.width * 0.9,
-                  maxHeight: MediaQuery.of(context).size.height * 0.9,
-                ),
-                child: Image.network(
-                  imageUrl,
-                  fit: BoxFit.contain,
-                  cacheWidth: 400, 
-                  cacheHeight: 400,
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return Container(
-                      padding: const EdgeInsets.all(32),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Top Bar
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  height: 50,
+                  decoration: const BoxDecoration(
+                    color: Colors.blue, // Customize this color
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(16),
+                      topRight: Radius.circular(16),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          result.filename,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                      child: const CircularProgressIndicator(),
-                    );
-                    },
-                    errorBuilder: (context, error, stackTrace) {
-                    return Image.network(
-                      alternativeUrl,
-                      fit: BoxFit.contain,
-                    );
-                  },
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white),
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+
+                // Image Viewer
+                Expanded(
+                  child: InteractiveViewer(
+                    child: Image.network(
+                      imageUrl,
+                      fit: BoxFit.contain,
+                      cacheWidth: 400,
+                      cacheHeight: 400,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(32),
+                            child: CircularProgressIndicator(),
+                          ),
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) {
+                        return Image.network(
+                          alternativeUrl,
+                          fit: BoxFit.contain,
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
+
 
   // results page contents(title, filter dropdown, cards, pagination)
   @override
