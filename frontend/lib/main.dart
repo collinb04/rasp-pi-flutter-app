@@ -464,7 +464,13 @@ class ResultsPageState extends State<ResultsPage> {
                       ),
                     ),
                   )
-                : ListView.builder(
+              : Scrollbar(
+                controller: _scrollController,
+                thumbVisibility: true,
+                thickness: 8,
+                radius: const Radius.circular(8),
+
+                child: ListView.builder(
                     controller: _scrollController,
                     itemCount: currentPageItems.length,
                     itemBuilder: (context, index) {
@@ -537,6 +543,7 @@ class ResultsPageState extends State<ResultsPage> {
                       );
                     },
                   ),
+              ),
             ),
             
             // Pagination
