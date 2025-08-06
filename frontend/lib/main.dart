@@ -360,7 +360,7 @@ class ResultsPageState extends State<ResultsPage> {
               children: [
                 const Center(
                   child: Text(
-                'Resultssss',
+                'Results',
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.w600,
@@ -449,6 +449,7 @@ class ResultsPageState extends State<ResultsPage> {
             // Results list
             Expanded(
               child: ListView.builder(
+                controller: _scrollController,
                 physics: const AlwaysScrollableScrollPhysics(),
                 itemCount: currentPageItems.length,
                 itemBuilder: (context, index) {
