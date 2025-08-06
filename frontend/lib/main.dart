@@ -464,79 +464,88 @@ class ResultsPageState extends State<ResultsPage> {
                       ),
                     ),
                   )
-              : Scrollbar(
-                controller: _scrollController,
-                thumbVisibility: true,
-                thickness: 8,
-                radius: const Radius.circular(8),
-
-                child: ListView.builder(
+                : RawScrollbar(
                     controller: _scrollController,
-                    itemCount: currentPageItems.length,
-                    itemBuilder: (context, index) {
-                      final item = currentPageItems[index];
-                      return Center(
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(
-                            maxWidth: 400, // Set your desired max width here
-                          ),
-                        child: Card(
-                        margin: const EdgeInsets.symmetric(vertical: 6),
-                        elevation: 2,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        child: Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Filename wrapped with InkWell to make it tappable
-                              InkWell(
-                                onTap: () => _showImagePopup(context, item),
-                                child: Text(
-                                  item.filename,
-                                  style: const TextStyle(
-                                    color: Colors.blue,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
-                                    decoration: TextDecoration.underline,
-                                  ),
-                                ),
+                    thumbVisibility: true, // Always show the thumb
+                    trackVisibility: true, // Always show the track
+                    thickness: 12, // Make it thicker so it's more visible
+                    radius: const Radius.circular(6),
+                    thumbColor: Colors.green.withOpacity(0.8),
+                    trackColor: Colors.grey.withOpacity(0.3),
+                    trackBorderColor: Colors.grey.withOpacity(0.1),
+                    child: ListView.builder(
+                      controller: _scrollController,
+                      // Add physics to ensure scrolling works
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      // Add padding to prevent content from hiding behind scrollbar
+                      padding: const EdgeInsets.only(right: 16),
+                      itemCount: currentPageItems.length,
+                      itemBuilder: (context, index) {
+                        final item = currentPageItems[index];
+                        return Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(
+                              maxWidth: 400,
+                            ),
+                            child: Card(
+                              margin: const EdgeInsets.symmetric(vertical: 6),
+                              elevation: 2,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8)
                               ),
-                              
-                              const SizedBox(height: 8),
-                                
-                              // Classification and prediction
-                              Text(
-                                '${item.classification} - ${item.prediction}',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: AppConstants.primaryGreen,
-                                  fontSize: 14,
-                                ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(16.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // Filename wrapped with InkWell to make it tappable
+                                    InkWell(
+                                      onTap: () => _showImagePopup(context, item),
+                                      child: Text(
+                                        item.filename,
+                                        style: const TextStyle(
+                                          color: Colors.blue,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w500,
+                                          decoration: TextDecoration.underline,
+                                        ),
+                                      ),
+                                    ),
+                                    
+                                    const SizedBox(height: 8),
+                                      
+                            // Classification and prediction
+                            Text(
+                              '${item.classification} - ${item.prediction}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: AppConstants.primaryGreen,
+                                fontSize: 14,
                               ),
-                              const SizedBox(height: 8),
-                              
-                              // GPS coordinates
-                              Row(
-                                children: [
-                                  Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
-                                  const SizedBox(width: 4),
-                                  Expanded(
-                                    child: item.hasGpsData
-                                        ? Text(
-                                            'Lat: ${item.latitude}, Lon: ${item.longitude}',
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: Colors.grey[600],
-                                            ),
-                                            overflow: TextOverflow.ellipsis,
-                                          )
-                                        : Text(
-                                            'No GPS data available',
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              fontStyle: FontStyle.italic,
-                                              color: Colors.grey[600],
+                            ),
+                            const SizedBox(height: 8),
+                            
+                            // GPS coordinates
+                            Row(
+                              children: [
+                                Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: item.hasGpsData
+                                      ? Text(
+                                          'Lat: ${item.latitude}, Lon: ${item.longitude}',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey[600],
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        )
+                                  : Text(
+                                      'No GPS data available',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontStyle: FontStyle.italic,
+                                        color: Colors.grey[600],
                                             ),
                                           ),
                                         ),
