@@ -269,7 +269,6 @@ class FileUploadPageState extends State<FileUploadPage> {
     );
   }
 }
-
 class ResultsPage extends StatefulWidget {
   final List<ImageResult> results;
   const ResultsPage({super.key, required this.results});
@@ -292,6 +291,12 @@ class ResultsPageState extends State<ResultsPage> {
     'Has Condition: >99.5%': 'THIS PICTURE HAS OAK WILT',
   };
 
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
   // filters results to display desired category
   List<ImageResult> get filteredResults {
     final selectedValue = filterMap[selectedFilter];
@@ -310,6 +315,26 @@ class ResultsPageState extends State<ResultsPage> {
   }
 
   int get totalPages => (filteredResults.length / AppConstants.pageSize).ceil();
+
+  void _scrollToTop() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
+  void _scrollToBottom() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
 
   void _showImagePopup(BuildContext context, ImageResult result) {
     final imageUrl = ApiService.getImageUrl(result.filename);
@@ -368,36 +393,7 @@ class ResultsPageState extends State<ResultsPage> {
               ),
             ),
             const SizedBox(height: 16),
-            // Scroll buttons
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_upward, color: Colors.green, size: 28),
-                  tooltip: 'Scroll to top',
-                  onPressed: () {
-                    _scrollController.animateTo(
-                      0,
-                      duration: const Duration(milliseconds: 500),
-                      curve: Curves.easeInOut,
-                    );
-                  },
-                ),
-                const SizedBox(width: 8),
-                IconButton(
-                  icon: const Icon(Icons.arrow_downward, color: Colors.green, size: 28),
-                  tooltip: 'Scroll to bottom',
-                  onPressed: () {
-                    _scrollController.animateTo(
-                      _scrollController.position.maxScrollExtent,
-                      duration: const Duration(milliseconds: 500),
-                      curve: Curves.easeInOut,
-                    );
-                  },
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
+            
             // Filter dropdown
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -425,92 +421,122 @@ class ResultsPageState extends State<ResultsPage> {
             ),
             
             const SizedBox(height: 8),
-            Text(
-              '${filteredResults.length} result(s)',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w500,
-              ),
+            
+            // Results count and scroll buttons row
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '${filteredResults.length} result(s)',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.keyboard_arrow_up, color: Colors.green, size: 28),
+                      tooltip: 'Scroll to top',
+                      onPressed: _scrollToTop,
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.keyboard_arrow_down, color: Colors.green, size: 28),
+                      tooltip: 'Scroll to bottom',
+                      onPressed: _scrollToBottom,
+                    ),
+                  ],
+                ),
+              ],
             ),
             const SizedBox(height: 12),
             
             // Results list
             Expanded(
-              child: ListView.builder(
-                controller: _scrollController,
-                physics: const AlwaysScrollableScrollPhysics(),
-                itemCount: currentPageItems.length,
-                itemBuilder: (context, index) {
-                final item = currentPageItems[index];
-                return Card(
-                  margin: const EdgeInsets.symmetric(vertical: 6),
-                  elevation: 2,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Filename wrapped with InkWell to make it tappable
-                        InkWell(
-                          onTap: () => _showImagePopup(context, item),
-                          child: Text(
-                            item.filename,
-                            style: const TextStyle(
-                              color: Colors.blue,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              decoration: TextDecoration.underline, // optional to show it’s clickable
-                            ),
-                          ),
-                        ),
-                        
-                        const SizedBox(height: 8),
-                          
-                          // Classification and prediction
-                          Text(
-                            '${item.classification} - ${item.prediction}',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: AppConstants.primaryGreen,
-                              fontSize: 14,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          
-                          // GPS coordinates
-                          Row(
+              child: currentPageItems.isEmpty 
+                ? const Center(
+                    child: Text(
+                      'No results found',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  )
+                : ListView.builder(
+                    controller: _scrollController,
+                    itemCount: currentPageItems.length,
+                    itemBuilder: (context, index) {
+                      final item = currentPageItems[index];
+                      return Card(
+                        margin: const EdgeInsets.symmetric(vertical: 6),
+                        elevation: 2,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: item.hasGpsData
-                                    ? Text(
-                                        'Lat: ${item.latitude}, Lon: ${item.longitude}',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.grey[600],
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
-                                      )
-                                    : Text(
-                                        'No GPS data available',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontStyle: FontStyle.italic,
-                                          color: Colors.grey[600],
-                                        ),
-                                      ),
+                              // Filename wrapped with InkWell to make it tappable
+                              InkWell(
+                                onTap: () => _showImagePopup(context, item),
+                                child: Text(
+                                  item.filename,
+                                  style: const TextStyle(
+                                    color: Colors.blue,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                    decoration: TextDecoration.underline,
+                                  ),
+                                ),
+                              ),
+                              
+                              const SizedBox(height: 8),
+                                
+                              // Classification and prediction
+                              Text(
+                                '${item.classification} - ${item.prediction}',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: AppConstants.primaryGreen,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              
+                              // GPS coordinates
+                              Row(
+                                children: [
+                                  Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
+                                  const SizedBox(width: 4),
+                                  Expanded(
+                                    child: item.hasGpsData
+                                        ? Text(
+                                            'Lat: ${item.latitude}, Lon: ${item.longitude}',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.grey[600],
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          )
+                                        : Text(
+                                            'No GPS data available',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              fontStyle: FontStyle.italic,
+                                              color: Colors.grey[600],
+                                            ),
+                                          ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
+                        ),
+                      );
+                    },
+                  ),
             ),
             
             // Pagination
