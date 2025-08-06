@@ -281,6 +281,7 @@ class ResultsPage extends StatefulWidget {
 class ResultsPageState extends State<ResultsPage> {
   int currentPage = 0;
   String selectedFilter = 'All';
+  final ScrollController _scrollController = ScrollController();
   
   // maps displayed categories to proper filtering
   static const Map<String, String?> filterMap = {
@@ -351,6 +352,38 @@ class ResultsPageState extends State<ResultsPage> {
           style: TextStyle(fontWeight: FontWeight.w500, fontSize: 24),
         ),
       ),
+        floatingActionButton: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          FloatingActionButton(
+            heroTag: 'scrollUp',
+            onPressed: () {
+              _scrollController.animateTo(
+                0,
+                duration: const Duration(milliseconds: 500),
+                curve: Curves.easeInOut,
+              );
+            },
+            backgroundColor: Colors.green[700],
+            mini: true,
+            child: const Icon(Icons.arrow_upward),
+          ),
+          const SizedBox(height: 8),
+          FloatingActionButton(
+            heroTag: 'scrollDown',
+            onPressed: () {
+              _scrollController.animateTo(
+                _scrollController.position.maxScrollExtent,
+                duration: const Duration(milliseconds: 500),
+                curve: Curves.easeInOut,
+              );
+            },
+            backgroundColor: Colors.green[700],
+            mini: true,
+            child: const Icon(Icons.arrow_downward),
+          ),
+        ],
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -408,6 +441,7 @@ class ResultsPageState extends State<ResultsPage> {
             // Results list
             Expanded(
               child: ListView.builder(
+                controller: _scrollController,
                 physics: const AlwaysScrollableScrollPhysics(),
                 itemCount: currentPageItems.length,
                 itemBuilder: (context, index) {
