@@ -269,6 +269,7 @@ class FileUploadPageState extends State<FileUploadPage> {
     );
   }
 }
+
 class ResultsPage extends StatefulWidget {
   final List<ImageResult> results;
   const ResultsPage({super.key, required this.results});
@@ -394,6 +395,25 @@ class ResultsPageState extends State<ResultsPage> {
             ),
             const SizedBox(height: 16),
             
+            // Scroll buttons
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_upward, color: Colors.green, size: 28),
+                  tooltip: 'Scroll to top',
+                  onPressed: _scrollToTop,
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(Icons.arrow_downward, color: Colors.green, size: 28),
+                  tooltip: 'Scroll to bottom',
+                  onPressed: _scrollToBottom,
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            
             // Filter dropdown
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -421,34 +441,13 @@ class ResultsPageState extends State<ResultsPage> {
             ),
             
             const SizedBox(height: 8),
-            
-            // Results count and scroll buttons row
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '${filteredResults.length} result(s)',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.keyboard_arrow_up, color: Colors.green, size: 28),
-                      tooltip: 'Scroll to top',
-                      onPressed: _scrollToTop,
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.keyboard_arrow_down, color: Colors.green, size: 28),
-                      tooltip: 'Scroll to bottom',
-                      onPressed: _scrollToBottom,
-                    ),
-                  ],
-                ),
-              ],
+            Text(
+              '${filteredResults.length} result(s)',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w500,
+              ),
             ),
             const SizedBox(height: 12),
             
