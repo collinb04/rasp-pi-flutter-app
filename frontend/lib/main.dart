@@ -378,13 +378,14 @@ class ResultsPageState extends State<ResultsPage> {
           style: TextStyle(fontWeight: FontWeight.w500, fontSize: 24),
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            // Title
-            const Center(
-              child: Text(
+      body: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              children: [
+                const Center(
+                  child: Text(
                 'Results',
                 style: TextStyle(
                   fontSize: 28,
@@ -573,6 +574,8 @@ class ResultsPageState extends State<ResultsPage> {
             ],
           ],
         ),
+      ),
+        ],
       ),
     );
   }
