@@ -368,7 +368,6 @@ class ResultsPageState extends State<ResultsPage> {
               ),
             ),
             const SizedBox(height: 16),
-            const SizedBox(height:8),
             // Scroll buttons
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -398,7 +397,7 @@ class ResultsPageState extends State<ResultsPage> {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 16),
             // Filter dropdown
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12),
