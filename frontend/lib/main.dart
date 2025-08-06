@@ -356,34 +356,6 @@ class ResultsPageState extends State<ResultsPage> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.arrow_upward, color: Colors.green, size: 28),
-                        tooltip: 'Scroll to top',
-                        onPressed: () {
-                          _scrollController.animateTo(
-                            0,
-                            duration: const Duration(milliseconds: 500),
-                            curve: Curves.easeInOut,
-                          );
-                        },
-                      ),
-                      const SizedBox(width: 8),
-                      IconButton(
-                        icon: const Icon(Icons.arrow_downward, color: Colors.green, size: 28),
-                        tooltip: 'Scroll to bottom',
-                        onPressed: () {
-                          _scrollController.animateTo(
-                            _scrollController.position.maxScrollExtent,
-                            duration: const Duration(milliseconds: 500),
-                            curve: Curves.easeInOut,
-                          );
-                        },
-                      ),
-                    ],
-                  ),
             // Title
             const Center(
               child: Text(
@@ -396,7 +368,37 @@ class ResultsPageState extends State<ResultsPage> {
               ),
             ),
             const SizedBox(height: 16),
-            
+            const SizedBox(height:8),
+            // Scroll buttons
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_upward, color: Colors.green, size: 28),
+                  tooltip: 'Scroll to top',
+                  onPressed: () {
+                    _scrollController.animateTo(
+                      0,
+                      duration: const Duration(milliseconds: 500),
+                      curve: Curves.easeInOut,
+                    );
+                  },
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(Icons.arrow_downward, color: Colors.green, size: 28),
+                  tooltip: 'Scroll to bottom',
+                  onPressed: () {
+                    _scrollController.animateTo(
+                      _scrollController.position.maxScrollExtent,
+                      duration: const Duration(milliseconds: 500),
+                      curve: Curves.easeInOut,
+                    );
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
             // Filter dropdown
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12),
