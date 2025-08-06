@@ -327,103 +327,11 @@ class ResultsPageState extends State<ResultsPage> {
                   maxWidth: MediaQuery.of(context).size.width * 0.9,
                   maxHeight: MediaQuery.of(context).size.height * 0.9,
                 ),
-                Image.network(
-                  imageUrl,
-                  fit: BoxFit.contain,
-                  cacheWidth: 400, 
-                  cacheHeight: 400,
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return Container(
-                      padding: const EdgeInsets.all(32),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: const CircularProgressIndicator(),
-                    );
-                  },
-                  errorBuilder: (context, error, stackTrace) {
-                    return Image.network(
-                      fallbackUrl,
-                      fit: BoxFit.contain,
-                    );
-                  },
-                ),
               ),
             ),
           ),
         ),
       ),
-    );
-  }
-
-
-  Widget _buildImageWidget(String primaryUrl, String alternativeUrl, String filename) {
-    return Image.network(
-      primaryUrl,
-      fit: BoxFit.contain,
-      cacheWidth: 400, 
-      cacheHeight: 400,
-      loadingBuilder: (context, child, loadingProgress) {
-        if (loadingProgress == null) return child;
-        return SizedBox(
-          height: 200,
-          child: Center(
-            child: CircularProgressIndicator(
-              value: loadingProgress.expectedTotalBytes != null
-                  ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                  : null,
-              color: Colors.green[700],
-            ),
-          ),
-        );
-      },
-      errorBuilder: (context, error, stackTrace) {
-        // Try alternative URL
-        return Image.network(
-          alternativeUrl,
-          fit: BoxFit.contain,
-          cacheWidth: 400, 
-          cacheHeight: 400,
-          loadingBuilder: (context, child, loadingProgress) {
-            if (loadingProgress == null) return child;
-            return SizedBox(
-              height: 200,
-              child: const Center(
-                child: CircularProgressIndicator(color: Colors.green),
-              ),
-            );
-          },
-          errorBuilder: (context, altError, altStackTrace) {
-            return Container(
-              height: 200,
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.error_outline,
-                    size: 48,
-                    color: Colors.red[300],
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Image failed to load',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'File: $filename',
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
     );
   }
 
@@ -497,71 +405,70 @@ class ResultsPageState extends State<ResultsPage> {
                 physics: const AlwaysScrollableScrollPhysics(),
                 itemCount: currentPageItems.length,
                 itemBuilder: (context, index) {
-                  final item = currentPageItems[index];
-                  return Card(
-                    margin: const EdgeInsets.symmetric(vertical: 6),
-                    elevation: 2,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Filename wrapped with InkWell to make it tappable
-                          InkWell(
-                            onTap: () => _showImagePopup(context, item),
-                            child: Text(
-                              item.filename,
-                              style: const TextStyle(
-                                color: Colors.blue,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                                decoration: TextDecoration.underline, // optional to show it’s clickable
-                              ),
+                final item = currentPageItems[index];
+                return Card(
+                  margin: const EdgeInsets.symmetric(vertical: 6),
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Filename wrapped with InkWell to make it tappable
+                        InkWell(
+                          onTap: () => _showImagePopup(context, item),
+                          child: Text(
+                            item.filename,
+                            style: const TextStyle(
+                              color: Colors.blue,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              decoration: TextDecoration.underline, // optional to show it’s clickable
                             ),
                           ),
-                          
-                          const SizedBox(height: 8),
-                            
-                            // Classification and prediction
-                            Text(
-                              '${item.classification} - ${item.prediction}',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: AppConstants.primaryGreen,
-                                fontSize: 14,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            
-                            // GPS coordinates
-                            Row(
-                              children: [
-                                Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
-                                const SizedBox(width: 4),
-                                Expanded(
-                                  child: item.hasGpsData
-                                      ? Text(
-                                          'Lat: ${item.latitude}, Lon: ${item.longitude}',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.grey[600],
-                                          ),
-                                          overflow: TextOverflow.ellipsis,
-                                        )
-                                      : Text(
-                                          'No GPS data available',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            fontStyle: FontStyle.italic,
-                                            color: Colors.grey[600],
-                                          ),
-                                        ),
-                                ),
-                              ],
-                            ),
-                          ],
                         ),
+                        
+                        const SizedBox(height: 8),
+                          
+                          // Classification and prediction
+                          Text(
+                            '${item.classification} - ${item.prediction}',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: AppConstants.primaryGreen,
+                              fontSize: 14,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          
+                          // GPS coordinates
+                          Row(
+                            children: [
+                              Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: item.hasGpsData
+                                    ? Text(
+                                        'Lat: ${item.latitude}, Lon: ${item.longitude}',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey[600],
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      )
+                                    : Text(
+                                        'No GPS data available',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontStyle: FontStyle.italic,
+                                          color: Colors.grey[600],
+                                        ),
+                                      ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
                   );
