@@ -470,9 +470,8 @@ class ResultsPageState extends State<ResultsPage> {
                     trackVisibility: true, // Always show the track
                     thickness: 12, // Make it thicker so it's more visible
                     radius: const Radius.circular(6),
-                    thumbColor: Colors.green.withOpacity(0.8),
-                    trackColor: Colors.grey.withOpacity(0.3),
-                    trackBorderColor: Colors.grey.withOpacity(0.1),
+                    thumbColor: Colors.green[700], // Use a color that matches the theme
+                    trackColor: Colors.grey[300], // Lighter color for the track
                     child: ListView.builder(
                       controller: _scrollController,
                       // Add physics to ensure scrolling works
@@ -485,7 +484,7 @@ class ResultsPageState extends State<ResultsPage> {
                         return Center(
                           child: ConstrainedBox(
                             constraints: const BoxConstraints(
-                              maxWidth: 400,
+                              maxWidth: 250,
                             ),
                             child: Card(
                               margin: const EdgeInsets.symmetric(vertical: 6),
