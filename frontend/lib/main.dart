@@ -281,6 +281,7 @@ class ResultsPage extends StatefulWidget {
 class ResultsPageState extends State<ResultsPage> {
   int currentPage = 0;
   String selectedFilter = 'All';
+  final ScrollController _scrollController = ScrollController();
   
   // maps displayed categories to proper filtering
   static const Map<String, String?> filterMap = {
@@ -351,20 +352,60 @@ class ResultsPageState extends State<ResultsPage> {
           style: TextStyle(fontWeight: FontWeight.w500, fontSize: 24),
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            // Title
-            const Center(
-              child: Text(
-                'Results',
+      body: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              children: [
+                const Center(
+                  child: Text(
+                'Resultssss',
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.w600,
                   color: AppConstants.primaryGreen,
                 ),
               ),
+            ),
+            const SizedBox(height: 16),
+            
+            // Scroll buttons
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_upward, color: Colors.green, size: 28),
+                  tooltip: 'Scroll to top',
+                  onPressed: () {
+                  final newOffset = (_scrollController.offset - 200).clamp(
+                    0.0,
+                    _scrollController.position.maxScrollExtent,
+                  );
+                  _scrollController.animateTo(
+                    newOffset,
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                  );
+                },
+              ),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(Icons.arrow_downward, color: Colors.green, size: 28),
+                  tooltip: 'Scroll to bottom',
+                  onPressed: () {
+                    final newOffset = (_scrollController.offset + 200).clamp(
+                      0.0,
+                      _scrollController.position.maxScrollExtent,
+                    );
+                    _scrollController.animateTo(
+                      newOffset,
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                    );
+                  },
+                ),
+              ],
             ),
             const SizedBox(height: 16),
             
@@ -421,7 +462,6 @@ class ResultsPageState extends State<ResultsPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Filename wrapped with InkWell to make it tappable
                         InkWell(
                           onTap: () => _showImagePopup(context, item),
                           child: Text(
@@ -471,52 +511,54 @@ class ResultsPageState extends State<ResultsPage> {
                                           color: Colors.grey[600],
                                         ),
                                       ),
-                              ),
-                            ],
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
-                        ],
-                      ),
+                        );
+                      },
                     ),
-                  );
-                },
-              ),
-            ),
+                  ),
             
-            // Pagination
-            if (totalPages > 1) ...[
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  ElevatedButton(
-                    onPressed: currentPage > 0 
-                        ? () => setState(() => currentPage--) 
-                        : null,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green[700],
-                      foregroundColor: Colors.white,
-                    ),
-                    child: const Text('Previous'),
-                  ),
-                  Text(
-                    'Page ${currentPage + 1} of $totalPages',
-                    style: const TextStyle(fontWeight: FontWeight.w500),
-                  ),
-                  ElevatedButton(
-                    onPressed: currentPage < totalPages - 1 
-                        ? () => setState(() => currentPage++) 
-                        : null,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green[700],
-                      foregroundColor: Colors.white,
-                    ),
-                    child: const Text('Next'),
+                // Pagination
+                if (totalPages > 1) ...[
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      ElevatedButton(
+                        onPressed: currentPage > 0 
+                            ? () => setState(() => currentPage--) 
+                            : null,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green[700],
+                          foregroundColor: Colors.white,
+                        ),
+                        child: const Text('Previous'),
+                      ),
+                      Text(
+                        'Page ${currentPage + 1} of $totalPages',
+                        style: const TextStyle(fontWeight: FontWeight.w500),
+                      ),
+                      ElevatedButton(
+                        onPressed: currentPage < totalPages - 1 
+                            ? () => setState(() => currentPage++) 
+                            : null,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green[700],
+                          foregroundColor: Colors.white,
+                        ),
+                        child: const Text('Next'),
+                      ),
+                    ],
                   ),
                 ],
-              ),
-            ],
-          ],
-        ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
