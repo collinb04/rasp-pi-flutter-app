@@ -9,7 +9,7 @@ import 'dart:io';
 class AppConstants {
   static const String baseUrl = 'http://localhost:5001';
   static const int pageSize = 20;
-  static const String appTitle = 'Edge Forestryy';
+  static const String appTitle = 'Edge Forestry';
   static const Color primaryGreen = Color.fromARGB(255, 0, 47, 10);
   static const Color darkGreen = Color(0xFF388E3C);
 }
@@ -315,6 +315,7 @@ class ResultsPageState extends State<ResultsPage> {
   final imageUrl = ApiService.getImageUrl(result.filename);
   final alternativeUrl = ApiService.getAlternativeImageUrl(result.filename);
 
+  // displays image popup with interactive viewer
   showDialog(
     context: context,
     builder: (_) => Dialog(
@@ -340,7 +341,7 @@ class ResultsPageState extends State<ResultsPage> {
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   height: 50,
                   decoration: const BoxDecoration(
-                    color: Colors.blue, // Customize this color
+                    color: Colors.green,
                     borderRadius: BorderRadius.only(
                       topLeft: Radius.circular(16),
                       topRight: Radius.circular(16),
@@ -515,74 +516,99 @@ class ResultsPageState extends State<ResultsPage> {
                 itemCount: currentPageItems.length,
                 itemBuilder: (context, index) {
                 final item = currentPageItems[index];
+                final imageUrl = ApiService.getImageUrl(item.filename);
+                // Card for each result
                 return Card(
                   margin: const EdgeInsets.symmetric(vertical: 6),
                   elevation: 2,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
-                    child: Column(
+                    child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        InkWell(
-                          onTap: () => _showImagePopup(context, item),
-                          child: Text(
-                            item.filename,
-                            style: const TextStyle(
-                              color: Colors.blue,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              decoration: TextDecoration.underline, // optional to show it’s clickable
-                            ),
-                          ),
-                        ),
-                        
-                        const SizedBox(height: 8),
-                          
-                          // Classification and prediction
-                          Text(
-                            '${item.classification} - ${item.prediction}',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: AppConstants.primaryGreen,
-                              fontSize: 14,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          
-                          // GPS coordinates
-                          Row(
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: item.hasGpsData
-                                    ? Text(
-                                        'Lat: ${item.latitude}, Lon: ${item.longitude}',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.grey[600],
+                              InkWell(
+                                onTap: () => _showImagePopup(context, item),
+                                child: Text(
+                                  item.filename,
+                                  style: const TextStyle(
+                                    color: Colors.blue,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                    decoration: TextDecoration.underline, // optional to show it’s clickable
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              
+                              // Classification and prediction
+                              Text(
+                                '${item.classification} - ${item.prediction}',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: AppConstants.primaryGreen,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              
+                              // GPS coordinates
+                              Row(
+                                children: [
+                                  Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
+                                  const SizedBox(width: 4),
+                                  Expanded(
+                                    child: item.hasGpsData
+                                        ? Text(
+                                            'Lat: ${item.latitude}, Lon: ${item.longitude}',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.grey[600],
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          )
+                                        : Text(
+                                            'No GPS data available',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              fontStyle: FontStyle.italic,
+                                              color: Colors.grey[600],
+                                            ),
+                                          ),
                                         ),
-                                        overflow: TextOverflow.ellipsis,
-                                      )
-                                    : Text(
-                                        'No GPS data available',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontStyle: FontStyle.italic,
-                                          color: Colors.grey[600],
-                                        ),
-                                      ),
+                                      ],
                                     ),
                                   ],
                                 ),
-                              ],
-                            ),
+                              ),
+                               // Thumbnail on the right
+                              const SizedBox(width: 12),
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.network(
+                                  imageUrl,
+                                  width: 64,
+                                  height: 64,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) => Container(
+                                    width: 64,
+                                    height: 64,
+                                    color: Colors.grey[300],
+                                    child: const Icon(Icons.broken_image, color: Colors.grey),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                        );
-                      },
-                    ),
+                        ),
+                      );
+                    },
                   ),
+                ),
             
                 // Pagination
                 if (totalPages > 1) ...[
