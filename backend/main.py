@@ -42,11 +42,13 @@ def load_model():
 load_model()
 
 # ======== USB Utilities =========
-def find_usb_mount():
+def find_usb_mount(parent_dir="/media/edgeforestry"):
     # Find USB mount point on Raspberry Pi
-    usb_path = "/media/edgeforestry/boot/" # SD card default directory
-    if os.path.exists(usb_path) and os.path.ismount(usb_path):
-        return usb_path
+    if os.path.exists(parent_dir):
+        for entry in os.listdir(parent_dir):
+            full_path = os.path.join(parent_dir, entry)
+            if os.path.ismount(full_path) and os.path.isdir(full_path):
+                return full_path
     return None
 
 def scan_usb_for_images(usb_path):
