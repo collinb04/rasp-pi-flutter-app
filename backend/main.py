@@ -55,7 +55,7 @@ def scan_usb_for_images(usb_path):
     valid_extensions = [".jpg", ".jpeg", ".png", ".gif"]
     image_files = []
     now = time.time()
-    time_since_upload = 2 * 365 * 24 * 60 * 60  # Approximate 2 years
+    time_since_upload = 48 * 60 * 60  # 48 hours in seconds
     cutoff = now - time_since_upload
 
     for root, _, files in os.walk(usb_path):

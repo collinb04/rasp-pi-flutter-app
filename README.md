@@ -25,21 +25,21 @@ This guide provides a step-by-step walkthrough for setting up the Edge Forestry 
 - Username: edgeforestry
 
 3. ### Flash the Operating System ###
-- Download the Raspberry Pi Imager for your operating system.
+- Download the Raspberry Pi Imager for your operating system. (find on web)
 - Insert a Micro SD card using your USB SD card reader.
 
-In the Imager:
+In the Imager App:
 - Device: Select Raspberry Pi 4
-- OS: Choose Raspberry Pi OS (64-bit) with Desktop and Recommended Software
+- OS: Choose Raspberry Pi OS (64-bit) with Desktop and Recommended Software.
 - Flash the OS to the SD card and safely eject it.
 
 4. ### Boot & Configure the Raspberry Pi ###
 - Insert the Micro SD card into the slot beneath the Raspberry Pi board.
 
 Connect the following:
-- Monitor via Micro HDMI
-- Keyboard and Mouse via USB ports
-- Power supply via USB-C
+- Monitor to pi via Micro HDMI
+- Keyboard and Mouse to pi via USB ports
+- Power supply to pi via USB-C
 
 On first boot:
 - Follow the on-screen setup
@@ -139,7 +139,7 @@ Connect Screen and Rasp Pi [Jumper Cables] :
 10. ### Change App Orientation ###
    
 1. Navigate the home desktop page
-2. Click the Raspi Logo in the corner
+2. Click the Raspi Logo in the top left corner
 3. Click Preferences
 4. Click Screen Configuration
 5. Click Screens and Choose Your Respective Screen
@@ -159,3 +159,13 @@ For debugging, you can always manually stop/start the service with:
   // 5 second buffer before app restarts
 - sudo systemctl stop ef.service
 - sudo systemctl start ef.service
+
+When updating the software, Flutter build web tends to Cache heavily,
+if you notice it is deploying the previous version, follow these steps:
+- sudo lsof -i :<port_number> (if nothing is displayed, the process is killed. Otherwise look for the PID)
+- kill <PID>
+- cd rasp-pi-flutter-app/frontend
+- flutter clean
+- flutter pub get
+- flutter build web
+
