@@ -6,7 +6,7 @@ BACKEND_SCRIPT="/StressTest/testBackend/mainTest.py"  # Your Flask backend scrip
 TEST_SETUP_SCRIPT="StressTest/images/fakeUsb.py"  # New setup script we'll create
 PYTHON_ENV="$PROJECT_DIR/venv"
 BACKEND_PORT=5001
-FRONTEND_PORT=8000
+FRONTEND_PORT=8005
 
 # Fake USB configuration
 NUM_TEST_IMAGES=50  # Reduced for faster startup
@@ -181,8 +181,7 @@ wait $CHROMIUM_PID 2>/dev/null || true
 # If we get here, Chromium exited - cleanup other services
 cleanup
 
-
-
+ 
 
 
 
