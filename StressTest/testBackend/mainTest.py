@@ -24,6 +24,7 @@ logging.basicConfig(level=logging.ERROR)
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(SCRIPT_DIR, "oak_wilt_demo3.h5")
 DISEASE = "Oak Wilt"
+STATIC_TEST_IMAGE = "/home/edgeforestry/rasp-pi-flutter-app/StressTest/images/sample.jpg"
 
 # Global variables
 image_path_map = {}
@@ -79,7 +80,7 @@ def scan_usb_for_images(usb_path):
 
     # Sort by modification time (newest first) and keep only the latest 100
     image_files.sort(reverse=True)
-    recent_paths = [path for _, path in image_files[:100]]
+    recent_paths = [path for _, path in image_files]
 
     # Update image_path_map
     for path in recent_paths:
@@ -322,40 +323,40 @@ def serve_resized_image(path):
     except Exception as e:
         logging.error(f"Failed to resize image: {e}")
         return send_file(path)  # fallback to original image
-
+  
 @app.route('/images/<path:filename>')
 def get_image(filename):
-    # Serve image files from USB drive
+    """Serve static test image for all requests (testing purposes)"""
     try:
+        # For testing: always serve the same static image regardless of filename
+        if os.path.exists(STATIC_TEST_IMAGE):
+            return serve_resized_image(STATIC_TEST_IMAGE)
+        
+        # Fallback: try original logic if static image doesn't exist
         decoded_filename = unquote(filename)
         
-        # Try to get from mapping first
         if decoded_filename in image_path_map:
             full_path = image_path_map[decoded_filename]
             if os.path.exists(full_path):
                 return serve_resized_image(full_path)
         
-        # Try original filename in mapping
         if filename in image_path_map:
             full_path = image_path_map[filename]
             if os.path.exists(full_path):
                 return serve_resized_image(full_path)
         
-        # Fallback: search in USB path
+        # Search in USB path as last resort
         usb_path = find_usb_mount()
-        if not usb_path:
-            return jsonify({"error": "No USB path found"}), 404
-        
-        # Try direct path
-        direct_path = os.path.join(usb_path, decoded_filename)
-        if os.path.exists(direct_path):
-            return serve_resized_image(direct_path)
-        
-        # Search recursively
-        for root, _, files in os.walk(usb_path):
-            if decoded_filename in files:
-                file_path = os.path.join(root, decoded_filename)
-                return serve_resized_image(file_path)
+        if usb_path:
+            direct_path = os.path.join(usb_path, decoded_filename)
+            if os.path.exists(direct_path):
+                return serve_resized_image(direct_path)
+            
+            # Search recursively
+            for root, _, files in os.walk(usb_path):
+                if decoded_filename in files:
+                    file_path = os.path.join(root, decoded_filename)
+                    return serve_resized_image(file_path)
         
         return jsonify({"error": "Image not found"}), 404
         
@@ -365,12 +366,17 @@ def get_image(filename):
 
 @app.route('/get-image')
 def get_image_simple():
-    # Alternative endpoint for serving images via query parameter
+    """Alternative endpoint - also serves static test image"""
     filename = request.args.get('name')
     if not filename:
         return jsonify({"error": "No filename provided"}), 400
     
     try:
+        # For testing: always serve the same static image
+        if os.path.exists(STATIC_TEST_IMAGE):
+            return serve_resized_image(STATIC_TEST_IMAGE)
+        
+        # Fallback to original logic
         decoded_filename = unquote(filename)
         
         if decoded_filename in image_path_map:
@@ -383,13 +389,7 @@ def get_image_simple():
         logging.error(f"Error in get-image: {e}")
         return jsonify({"error": "Error serving image"}), 500
 
-@app.errorhandler(404)
-def not_found(error):
-    return jsonify({"error": "Endpoint not found"}), 404
-
-@app.errorhandler(500)
-def internal_error(error):
-    return jsonify({"error": "Internal server error"}), 500
+ 
 
 # ======== Run Server =========
 if __name__ == "__main__":
