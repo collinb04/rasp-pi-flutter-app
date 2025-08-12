@@ -42,13 +42,16 @@ def load_model():
 load_model()
 
 # ======== USB Utilities =========
-def find_usb_mount(parent_dir="/media/edgeforestry/FAKE_USB"):
-    # Find USB mount point on Raspberry Pi
-    if os.path.exists(parent_dir):
-        for entry in os.listdir(parent_dir):
-            full_path = os.path.join(parent_dir, entry)
-            if os.path.ismount(full_path) and os.path.isdir(full_path):
-                return full_path
+def find_usb_mount(parent_dir="/media/edgeforestry"):
+    """
+    Find USB mount point. For testing, we can use a specific path.
+    In production, this would find actual mounted USB drives.
+    """
+    # For testing with FAKE_USB
+    test_path = "/media/edgeforestry/FAKE_USB"
+    if os.path.exists(test_path) and os.path.isdir(test_path):
+        return test_path
+    
     return None
 
 def scan_usb_for_images(usb_path):
