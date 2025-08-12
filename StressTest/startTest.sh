@@ -80,23 +80,7 @@ if [ $COUNTER -eq $TIMEOUT ]; then
 fi
 
 echo "[+] Backend is ready!"
-
-# === TEST BACKEND ===
-echo "[+] Testing backend with a quick scan..."
-TEST_RESPONSE=$(curl -s -w "%{http_code}" "http://localhost:$BACKEND_PORT/scan-and-process" -o /tmp/backend_test.json)
-if [ "$TEST_RESPONSE" = "200" ]; then
-    echo "[+] Backend test successful!"
-    # Show a summary of what was found
-    if command -v jq &> /dev/null; then
-        echo "[+] Processing results:"
-        jq -r '.results_by_category | to_entries[] | "\(.key): \(.value | length) images"' /tmp/backend_test.json 2>/dev/null || true
-    fi
-else
-    echo "[!] Backend test returned status: $TEST_RESPONSE"
-    echo "[!] Response:"
-    cat /tmp/backend_test.json 2>/dev/null || echo "No response file"
-fi
-
+ 
 # === START FRONTEND ===
 echo "[+] Starting Flutter web frontend..."
 FRONTEND_DIR="$PROJECT_DIR/frontend/build/web"
