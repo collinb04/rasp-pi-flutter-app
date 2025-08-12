@@ -51,8 +51,8 @@ pkill -f chromium-browser 2>/dev/null || true
 
 # === START BACKEND ===
 echo "[+] Starting Flask backend..."
-if [ ! -f "$PROJECT_DIR/$BACKEND_SCRIP" ]; then
-    echo "[-] Backend script not found: $PROJECT_DIR/$BACKEND_SCRIP"
+if [ ! -f "$PROJECT_DIR/$BACKEND_SCRIPT" ]; then
+    echo "[-] Backend script not found: $PROJECT_DIR/$BACKEND_SCRIPT"
     exit 1
 fi
 
