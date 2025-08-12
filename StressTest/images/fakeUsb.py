@@ -3,6 +3,7 @@ import shutil
 import time 
 import logging
 from pathlib import Path
+import sys
 
 # === LOGGING SETUP ===
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -99,6 +100,8 @@ def main():
         return False
   
 if __name__ == "__main__":
-    success = main()
-    
+    if len(sys.argv) > 1 and sys.argv[1] == "cleanup":
+        cleanup()
+    else:
+        success = main()
  

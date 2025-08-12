@@ -35,7 +35,7 @@ if [ ! -f "$SAMPLE_IMAGE" ]; then
 fi 
 
 # Run the fake USB setup
-python3 "$TEST_SETUP_SCRIPT"  
+python3 "$PROJECT_DIR/$TEST_SETUP_SCRIPT"  
 if [ $? -ne 0 ]; then
     echo "[-] Failed to setup fake USB — exiting."
     exit 1
