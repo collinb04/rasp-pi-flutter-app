@@ -179,7 +179,7 @@ echo ""
 echo "Press Ctrl+C to stop all services..."
 
 # Function to cleanup on exit
-cleanup() {
+cleanup() { 
     echo ""
     echo "[+] Shutting down services..."
     kill $BACKEND_PID $FRONTEND_PID $CHROMIUM_PID 2>/dev/null || true

@@ -42,13 +42,13 @@ def load_model():
 load_model()
 
 # ======== USB Utilities =========
-def find_usb_mount(parent_dir="/media/edgeforestry"):
+def find_usb_mount( ):
     """
     Find USB mount point. For testing, we can use a specific path.
     In production, this would find actual mounted USB drives.
     """
     # For testing with FAKE_USB
-    test_path = "/media/edgeforestry/FAKE_USB"
+    test_path = "/home/edgeforestry/FAKE_USB"
     if os.path.exists(test_path) and os.path.isdir(test_path):
         return test_path
     

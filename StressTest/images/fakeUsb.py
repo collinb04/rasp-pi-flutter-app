@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 # === CONFIG ===
 NUM_IMAGES = 300               # number of test images
 # Updated to match Flask backend expectations
-USB_PARENT_PATH = "/media/edgeforestry"
+USB_PARENT_PATH = "/home/edgeforestry"
 USB_MOUNT_NAME = "FAKE_USB"
 USB_MOUNT_PATH = os.path.join(USB_PARENT_PATH, USB_MOUNT_NAME)
 SAMPLE_IMAGE = "sample.jpg"    # path to an example image
