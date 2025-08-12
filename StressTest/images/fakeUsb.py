@@ -16,7 +16,7 @@ USB_PARENT_PATH = "/home/edgeforestry"
 USB_MOUNT_NAME = "FAKE_USB"
 USB_MOUNT_PATH = os.path.join(USB_PARENT_PATH, USB_MOUNT_NAME)
 SAMPLE_IMAGE = "/home/edgeforestry/rasp-pi-flutter-app/StressTest/images/sample.jpg"    # path to an example image
-BACKEND_URL = "http://localhost:5002/scan-and-process"
+BACKEND_URL = "http://localhost:5001/scan-and-process"
 REQUEST_TIMEOUT = 60           # increased timeout for processing 300 images
 
 def create_mount_simulation():

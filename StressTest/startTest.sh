@@ -5,7 +5,7 @@ PROJECT_DIR="/home/edgeforestry/rasp-pi-flutter-app"
 BACKEND_SCRIPT="/StressTest/testBackend/mainTest.py"  # Your Flask backend script
 TEST_SETUP_SCRIPT="StressTest/images/fakeUsb.py"  # New setup script we'll create
 PYTHON_ENV="$PROJECT_DIR/venv"
-BACKEND_PORT=5002
+BACKEND_PORT=5001
 FRONTEND_PORT=8000
 
 # Fake USB configuration
