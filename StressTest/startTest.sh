@@ -45,7 +45,7 @@ echo "[+] Fake USB setup complete"
 
 # === KILL EXISTING PROCESSES ===
 echo "[+] Cleaning up any existing processes..."
-pkill -f "python3.*$BACKEND_SCRIPT" 2>/dev/null || true
+pkill -f "python3.*$PROJECT_DIR/$BACKEND_SCRIPT" 2>/dev/null || true
 pkill -f "python3 -m http.server $FRONTEND_PORT" 2>/dev/null || true
 pkill -f chromium-browser 2>/dev/null || true
 
@@ -56,7 +56,7 @@ if [ ! -f "$BACKEND_SCRIPT" ]; then
     exit 1
 fi
 
-nohup python3 "$BACKEND_SCRIPT" > backend.log 2>&1 &
+nohup python3 "$PROJECT_DIR/$BACKEND_SCRIPT" > backend.log 2>&1 &
 BACKEND_PID=$!
 echo "[+] Backend started with PID: $BACKEND_PID"
 
