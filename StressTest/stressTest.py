@@ -9,7 +9,7 @@ USB_MOUNT_PATH = "/media/edgeforestry/FAKE_USB"  # fake USB mount
 SAMPLE_IMAGE = "sample.jpg"    # path to an example image
 BACKEND_URL = "http://localhost:5002/scan-and-process"
 
-# === SETUP FAKE USB ===
+# === SETUP FAKE USB === 
 os.makedirs(USB_MOUNT_PATH, exist_ok=True)
 
 # Clear existing files
