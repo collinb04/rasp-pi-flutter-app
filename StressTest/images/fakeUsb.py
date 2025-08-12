@@ -1,7 +1,6 @@
 import os
 import shutil
-import time
-import requests
+import time 
 import logging
 from pathlib import Path
 
@@ -76,77 +75,7 @@ def setup_fake_usb():
     except Exception as e:
         logger.error(f"Failed to setup fake USB: {e}")
         return False
-
-def test_backend():
-    """Test the backend scan-and-process endpoint."""
-    try:
-        logger.info("Sending scan-and-process request...")
-        logger.info(f"Backend will look for USB mounts in: {USB_PARENT_PATH}")
-        
-        start_time = time.time()
-        
-        response = requests.get(BACKEND_URL, timeout=REQUEST_TIMEOUT)
-        
-        duration = time.time() - start_time
-        logger.info(f"Request completed in {duration:.2f} seconds")
-        logger.info(f"Response status: {response.status_code}")
-        
-        # Handle response content
-        try:
-            json_response = response.json()
-            logger.info("Response (JSON):")
-            
-            # Print summary information
-            if "results_by_category" in json_response:
-                categories = json_response["results_by_category"]
-                for category, results in categories.items():
-                    logger.info(f"  {category}: {len(results)} images")
-            
-            if "all_results" in json_response:
-                total_processed = len(json_response["all_results"])
-                logger.info(f"Total images processed: {total_processed}")
-                
-            # Print first few results as examples
-            if "all_results" in json_response and json_response["all_results"]:
-                logger.info("First few results:")
-                for result in json_response["all_results"][:3]:
-                    logger.info(f"  {result['filename']}: {result['prediction']} - {result['classification']}")
-                    
-            return json_response
-            
-        except ValueError:
-            logger.info("Response (Text):")
-            print(response.text)
-            return response.text
-            
-    except requests.exceptions.Timeout:
-        logger.error(f"Request timed out after {REQUEST_TIMEOUT} seconds")
-        logger.error("Try increasing REQUEST_TIMEOUT or reducing NUM_IMAGES")
-        return None
-    except requests.exceptions.ConnectionError:
-        logger.error(f"Failed to connect to {BACKEND_URL}")
-        logger.error("Make sure the Flask backend is running on port 5002")
-        return None
-    except Exception as e:
-        logger.error(f"Unexpected error during backend test: {e}")
-        return None
-
-def verify_output_files():
-    """Check if the backend created output files."""
-    try:
-        csv_files = list(Path(USB_MOUNT_PATH).glob("results*.csv"))
-        geojson_files = list(Path(USB_MOUNT_PATH).glob("results*.geojson"))
-        
-        logger.info(f"CSV files created: {len(csv_files)}")
-        logger.info(f"GeoJSON files created: {len(geojson_files)}")
-        
-        for csv_file in csv_files:
-            logger.info(f"  CSV: {csv_file}")
-        for geojson_file in geojson_files:
-            logger.info(f"  GeoJSON: {geojson_file}")
-            
-    except Exception as e:
-        logger.error(f"Error checking output files: {e}")
+ 
 
 def cleanup():
     """Optional cleanup function."""
@@ -168,26 +97,8 @@ def main():
     if not setup_fake_usb():
         logger.error("Setup failed, aborting test")
         return False
-    
-    # Test phase
-    result = test_backend()
-    
-    # Check output files
-    if result:
-        verify_output_files()
-    
-    # Summary
-    if result is not None:
-        logger.info("=== TEST COMPLETED SUCCESSFULLY ===")
-        return True
-    else:
-        logger.error("=== TEST FAILED ===")
-        return False
-
+  
 if __name__ == "__main__":
     success = main()
     
-    # Uncomment the next line if you want to clean up after testing
-    cleanup()
-    
-    exit(0 if success else 1)
+ 
