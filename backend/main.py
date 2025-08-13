@@ -204,7 +204,7 @@ def write_geojson(results, output_path):
                     }
                 })
         
-        geojson_path = get_unique_path(output_path, "results", "csv")
+        geojson_path = get_unique_path(output_path, "results", "geojson")
         with open(geojson_path, "w") as f:
             json.dump({"type": "FeatureCollection", "features": geo_features}, f, indent=2)
         return geojson_path
