@@ -1,91 +1,74 @@
-Raspberry Pi Setup Guide for Edge Forestry Flutter App
+Raspberry Pi Setup Guide – Edge Forestry Flutter App
+1. Introduction
+This guide provides a step-by-step walkthrough for setting up the Edge Forestry Flutter Application on a Raspberry Pi 4. It covers hardware assembly, operating system installation, dependency setup, and service configuration. By the end, your application will automatically launch at startup.
 
-1. ### Introduction ###
-This guide provides a step-by-step walkthrough for setting up the Edge Forestry Flutter Application on a Raspberry Pi 4. It covers hardware assembly, OS installation, dependency setup, and service configuration to ensure smooth deployment.
+2. Prerequisites
+Hardware: 
+– Raspberry Pi 4B (8GB RAM) 
+– Raspberry Pi 7-inch LED Touchscreen Kit 
+– Compatible Raspberry Pi tablet case 
+– Two MicroSD cards 
+– USB SD card reader 
+– Micro HDMI cable 
+– USB-C power cable
 
-2. ### Prerequisites ###
---- Hardware Requirements ---
-- Raspberry Pi 4B (8GB RAM)
-- Raspberry Pi 7" LED Touchscreen Kit
-- Compatible Raspberry Pi Tablet Case
-- 2× Micro SD Cards
-- USB SD Card Reader
-- Micro HDMI Cable
-- USB-C Power Cable
-  
---- Tools ---
-- Small Phillips Screwdriver
-  
---- Software ---
-- Raspberry Pi Imager (latest version)
-- Flutter SDK
-- Git
-  
---- User Account ---
-- Username: edgeforestry
+Tools: 
+– Small Phillips screwdriver
 
-3. ### Flash the Operating System ###
-- Download the Raspberry Pi Imager for your operating system. (find on web)
-- Insert a Micro SD card using your USB SD card reader.
+Software: 
+– Raspberry Pi Imager (latest version) – available from raspberrypi.com/software 
+– Flutter SDK – available from flutter.dev 
+– Git
 
-In the Imager App:
-- Device: Select Raspberry Pi 4
-- OS: Choose Raspberry Pi OS (64-bit) with Desktop and Recommended Software.
-- Flash the OS to the SD card and safely eject it.
+User Account: 
+– Username: edgeforestry
 
-4. ### Boot & Configure the Raspberry Pi ###
-- Insert the Micro SD card into the slot beneath the Raspberry Pi board.
+3. Flash the Operating System
+Download and install Raspberry Pi Imager. Insert a MicroSD card into the USB SD card reader. In the Imager, select Raspberry Pi 4 as the device and choose Raspberry Pi OS (64-bit) with Desktop and Recommended Software as the operating system. Flash the OS to the card and eject it safely.
 
-Connect the following:
-- Monitor to pi via Micro HDMI
-- Keyboard and Mouse to pi via USB ports
-- Power supply to pi via USB-C
+4. Boot and Configure the Raspberry Pi
+Insert the MicroSD card into the Pi. Connect a monitor via Micro HDMI, keyboard and mouse via USB, and the power cable via USB-C. On first boot, complete the setup wizard and connect to Wi-Fi so you can clone the repository.
 
-On first boot:
-- Follow the on-screen setup
-- Connect to your Wi-Fi network (required for Git cloning)
+5. Install Software and Dependencies
+Clone the Edge Forestry Flutter App repository using:
+git clone https://github.com/MichiganDNR/rasp-pi-flutter-app.git
 
-5. ### Install Software & Dependencies ###
-Clone the Flutter App Repository:
-- git clone https://github.com/MichiganDNR/rasp-pi-flutter-app.git
+Update and upgrade the system packages, then install Python 3 and pip:
+– sudo apt update && sudo apt upgrade -y
+– sudo apt install python3 python3-pip -y
 
-Set Up Python and Backend Environment:
-- sudo apt update
-- sudo apt upgrade -y
-- sudo apt install python3 python3-pip -y
+Navigate into the project directory, create a Python virtual environment, activate it, then install backend requirements:
+– cd rasp-pi-flutter-app
+– python3 -m venv venv
+– source venv/bin/activate
+– cd backend
+– pip install -r requirements.txt
 
-- cd rasp-pi-flutter-app
-- python3 -m venv venv
-- source venv/bin/activate
+Install the Flutter SDK by cloning the stable branch from GitHub into your home directory. Add Flutter to your PATH by appending export:  
+[PATH="$PATH:$HOME/flutter/bin"] to your .bashrc file, then reload the shell with  [source ~/.bashrc.]
 
-- cd backend
-- pip install -r requirements.txt
+Build the Flutter web app by enabling web support, installing Chromium, creating a symlink so Flutter can call it as “google-chrome,” then fetching dependencies and running the Flutter build command from the frontend folder.
 
-Install Flutter SDK:
-- cd ~
-- git clone https://github.com/flutter/flutter.git -b stable
-- echo 'export PATH="$PATH:$HOME/flutter/bin"' >> ~/.bashrc
-- source ~/.bashrc
+–  cd ~/rasp-pi-flutter-app
+–  flutter config --enable-web
+–  sudo apt install chromium-browser -y
+–  sudo ln -s /usr/bin/chromium-browser /usr/bin/google-chrome
 
-Build the Flutter Web App:
-- cd ~/rasp-pi-flutter-app
-- flutter config --enable-web
-- sudo apt install chromium-browser -y
-- sudo ln -s /usr/bin/chromium-browser /usr/bin/google-chrome
-- cd frontend
-- flutter pub get
-- flutter build web
-  
-6. ### Create Start Script ###
-Ensure the startup script is executable:
-- chmod +x /home/edgeforestry/rasp-pi-flutter-app/start.sh
+–  cd frontend
+–  flutter pub get
+–  flutter build web
 
-7. ### Register Systemd Service ###
-Create and edit the service file:
-- sudo nano /etc/systemd/system/ef.service
+6. Create Start Script
+Ensure the startup script in /home/edgeforestry/rasp-pi-flutter-app/start.sh is executable by running:
+– chmod +x /home/edgeforestry/rasp-pi-flutter-app/start.sh
 
-Paste the following:
------------------------------
+7. Register systemd Service
+Create a new service file at /etc/systemd/system/ef.service with the configuration provided in this guide. Set the description, execution command, working directory, user, environment variables, output settings, and restart policy.
+
+Create the service:
+– sudo nano /etc/systemd/system/ef.service
+
+PASTE:
 
 [Unit]
 Description=Edge Forestry Flutter App
@@ -104,68 +87,58 @@ TimeoutStartSec=0
 
 [Install]
 WantedBy=graphical.target
+ – ctrl o to save and ctrl x to exit
+ 
+Enable the service on boot and start it immediately using:
+– sudo systemctl enable ef.service
+– sudo systemctl start ef.service
 
------------------------------
+8. Assemble the Hardware
+First, attach the Raspberry Pi to the touchscreen mounting columns using screws.
 
-Save and Exit the Service:
-cntrl + c --> Save
-Enter/Return Button to confirm file changes
-cntrl + x --> Exit
+Ribbon cable connection:
+Ensure the Pi is powered off. Locate the ribbon cable connector on the Pi, lift the black clasp, insert the ribbon cable with connectors facing inward, and push the clasp down to lock it. Repeat the process on the screen’s connector.
 
-Then enable the service:
-- sudo systemctl enable ef.service
-- sudo systemctl start ef.service
+Jumper cable connection:
+Use the red and black jumper wires from the kit. On the screen, connect black to GND and red to 5V. On the Pi (in landscape orientation), connect red to the corner 5V pin and black to the GND pin one space away.
 
-8. ### Assemble Full Hardware Device ###
-First- Screw Pi to Screen Columns
+9. Change App Orientation
+From the desktop, click the Raspberry Pi menu, select Preferences, then Screen Configuration. Choose your screen, set orientation to Left, and apply changes.
 
-Connect Screen and Rasp Pi [Ribbon Cable] :
-- Ensure Device is Not Connected to Power
-- Find Your Ribbon Cable (should have came witn screen kit)
-- Find the Ribbon Cable on the Rasp Pi Board
-- Lift the Black Clasp Gently
-- Face The Ribbon Cable Connectors Towards the Inside of the Pi Device
-- Ensure the Cable is Stably Within the Connecter Slot
-- Gently Push the Black Clasp Back Down to Secure the Cable on the Pi
-- Now Do the Same Procees on the LED Screen Board
+Follow the touch adjustment instructions here:
+https://core-electronics.com.au/guides/raspberry-pi/dfrobot-8.9-ips-display/
 
-Connect Screen and Rasp Pi [Jumper Cables] :
-- Choose the Red and Black Cables that Came with the Screen Kit
-- Connect the Black Cable to the Pin Labeled GRND on The Led Screen
-- Connect the Red Cable to the Pin Labeled 5V on The Led Screen
-- Now Using these Same Cables~ Connect the Red Cable to the Corner Pin of the Pi
-- Skip one Pin on the Same Row of the Pi and Connect the Black Cable (Pi in Landscape Orientation) 
+10. Debugging and Maintenance
+To view live logs:
+– journalctl -u ef.service -f
 
-10. ### Change App Orientation ###
-   
-1. Navigate the home desktop page
-2. Click the Raspi Logo in the top left corner
-3. Click Preferences
-4. Click Screen Configuration
-5. Click Screens and Choose Your Respective Screen
-6. Click Orientation and Choose Left
-7. Click Apply to apply changes
-8. Follow the instructions under "Ajusting Touch Orientation" within this article:
-   https://core-electronics.com.au/guides/raspberry-pi/dfrobot-8.9-ips-display/
+To stop and start the service:
+– sudo systemctl stop ef.service
+– sudo systemctl start ef.service
 
-### Final Notes ###
-Your app should now auto-start on boot.
+To quit kiosk mode:
+– Press Alt + F4 (the app will restart after 5 seconds).
 
-You can view logs using:
-- journalctl -u ef.service -f
-  
-For debugging, you can always manually stop/start the service with:
-- alt + F4 (quits the app out of kiosk mode)
-  // 5 second buffer before app restarts
-- sudo systemctl stop ef.service
-- sudo systemctl start ef.service
+11. Updating the App
+If the Flutter web build displays an old version, first kill any process using the app’s port, then clean, fetch, and rebuild the web frontend.
 
-When updating the software, Flutter build web tends to Cache heavily,
-if you notice it is deploying the previous version, follow these steps:
-- sudo lsof -i :<port_number> (if nothing is displayed, the process is killed. Otherwise look for the PID)
-- kill <PID>
-- cd rasp-pi-flutter-app/frontend
-- flutter clean
-- flutter pub get
-- flutter build web
+– sudo lsof -i :<port_number>
+– kill <PID>   # if a process is using the port
+
+– cd rasp-pi-flutter-app/frontend
+– flutter clean
+– flutter pub get
+– flutter build web
+
+12. Stress Testing
+Navigate to the dir using: [cd /rasp-pi-flutter-app/StressTest] and run [./startTest.sh] to begin.
+– Press Ctrl + C to halt and clean up, or run:
+– python3 fakeUsb.py cleanup
+
+13. Final Verification
+Reboot the Raspberry Pi using [sudo reboot]. The app should start automatically in kiosk mode.
+
+Setup is now complete.
+
+
 
