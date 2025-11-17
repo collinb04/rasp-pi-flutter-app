@@ -28,6 +28,7 @@ environment:
 # the latest version available on pub.dev. To see which dependencies have newer
 # versions available, run `flutter pub outdated`.
 dependencies:
+  dropdown_button2: ^2.3.9
   url_launcher: ^6.2.5
   path_provider: ^2.0.15
   flutter:

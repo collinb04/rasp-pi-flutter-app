@@ -4,6 +4,9 @@ import 'package:flutter/services.dart';
 import 'package:csv/csv.dart';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:ui';
+import 'package:dropdown_button2/dropdown_button2.dart';
+
 
 // Constants
 class AppConstants {
@@ -17,29 +20,34 @@ class AppConstants {
 // Models
 class ImageResult {
   final String filename;
+  final double prediction;
+  final String predictedClass;
   final String classification;
-  final String prediction;
   final String? latitude;
   final String? longitude;
 
   ImageResult({
     required this.filename,
-    required this.classification,
     required this.prediction,
+    required this.predictedClass,
+    required this.classification,
     this.latitude,
     this.longitude,
-  });
+  }); 
 
   // factory constructor to create an ImageResult List from JSON
-  factory ImageResult.fromJson(Map<String, dynamic> json) {
-    return ImageResult(
-      filename: json['filename']?.toString() ?? '',
-      classification: json['classification']?.toString() ?? '',
-      prediction: json['prediction']?.toString() ?? '',
-      latitude: json['latitude']?.toString(),
-      longitude: json['longitude']?.toString(),
-    );
-  }
+factory ImageResult.fromJson(Map<String, dynamic> json) {
+  return ImageResult(
+    filename: json['filename']?.toString() ?? '',
+    prediction: (json['prediction'] is num)
+        ? (json['prediction'] as num).toDouble()
+        : double.tryParse(json['prediction']?.toString() ?? '0') ?? 0.0,
+    predictedClass: json['predictedClass']?.toString() ?? '',
+    classification: json['classification']?.toString() ?? '',
+    latitude: json['latitude']?.toString(),
+    longitude: json['longitude']?.toString(),
+  );
+}
 
   bool get hasGpsData => latitude != null && longitude != null;
 }
@@ -47,8 +55,8 @@ class ImageResult {
 // Services
 class ApiService {
   // scan and process server- contacts backend and awaits results to parse and output
-  static Future<List<ImageResult>> scanAndProcess() async {
-    final uri = Uri.parse('${AppConstants.baseUrl}/scan-and-process');
+  static Future<List<ImageResult>> scanAndProcess(String disease) async {
+    final uri = Uri.parse('${AppConstants.baseUrl}/scan-and-process?disease=$disease');
     final response = await http.get(uri);
     
     if (response.statusCode == 200) {
@@ -116,37 +124,46 @@ class MyApp extends StatelessWidget {
 
 class FileUploadPage extends StatefulWidget {
   const FileUploadPage({super.key});
-  
+
   @override
   FileUploadPageState createState() => FileUploadPageState();
 }
 
 class FileUploadPageState extends State<FileUploadPage> {
-  String? _statusMessage; // feedback output
+  String? _statusMessage;
   bool _isLoading = false;
+  String? _selectedDisease;
 
-  // calls scan and process to connect to backend
+  // List of diseases to show in dropdown
+  final List<String> _diseaseOptions = ['Oak Wilt', 'HWA'];
+
   Future<void> _scanAndAnalyze() async {
+    if (_selectedDisease == null) return;
+
     setState(() {
       _statusMessage = null;
       _isLoading = true;
     });
 
     try {
-      final results = await ApiService.scanAndProcess();
-      
+      final results = await ApiService.scanAndProcess(_selectedDisease!);
+
       if (!mounted) return;
-      
+
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => ResultsPage(results: results),
+          builder: (context) => ResultsPage(
+            results: results,
+            selectedDisease: _selectedDisease!,
+          ),
         ),
       );
     } catch (e) {
       if (mounted) {
         setState(() {
-          _statusMessage = e is HttpException ? e.message : 'Request failed: $e';
+          _statusMessage =
+              e is HttpException ? e.message : 'Request failed: $e';
         });
       }
     } finally {
@@ -157,21 +174,20 @@ class FileUploadPageState extends State<FileUploadPage> {
       }
     }
   }
-  
-  // home page build
+
+  // ---------------- UI ----------------
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
           AppConstants.appTitle,
-          style: TextStyle(fontWeight: FontWeight.w500, fontSize: 24),
+          style: TextStyle(fontWeight: FontWeight.w500, fontSize: 26, fontFamily: 'helvetica'),
         ),
       ),
       backgroundColor: Colors.white,
       body: Stack(
         children: [
-          // Background image
           Align(
             alignment: Alignment.bottomCenter,
             child: Image.asset(
@@ -179,11 +195,10 @@ class FileUploadPageState extends State<FileUploadPage> {
               fit: BoxFit.cover,
               width: double.infinity,
               height: 400,
-              errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+              errorBuilder: (context, error, stackTrace) =>
+                  const SizedBox.shrink(),
             ),
           ),
-          
-          // Main content
           Column(
             children: [
               const Spacer(flex: 1),
@@ -203,7 +218,7 @@ class FileUploadPageState extends State<FileUploadPage> {
                       ),
                       const SizedBox(height: 12),
                       const Text(
-                        'Click to scan pictures from today and analyze them through our model.',
+                        'Choose a disease, click to scan pictures from today, and analyze them through our model.',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w400,
@@ -213,8 +228,8 @@ class FileUploadPageState extends State<FileUploadPage> {
                       ),
                       const SizedBox(height: 30),
 
-                      // error messages displayed- full stack connection complications
-                      if (_statusMessage != null) ...[
+                      // Error message
+                      if (_statusMessage != null)
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 12.0),
                           child: Text(
@@ -226,15 +241,105 @@ class FileUploadPageState extends State<FileUploadPage> {
                             textAlign: TextAlign.center,
                           ),
                         ),
-                      ],
 
-                      // Main scan button
+                        // ---------- Dropdown ----------
+                        Container(
+                          width: 240, 
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            border: Border.all(
+                              color: Colors.green[700]!,
+                              width: 2,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.green.withValues(alpha: 0.1),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton2<String>(
+                              isExpanded: true,
+                              hint: const Text(
+                                'Select Disease',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w600, 
+                                  color: AppConstants.primaryGreen,
+                                ),
+                              ),
+                              value: _selectedDisease,
+                              items: ['Oak Wilt', 'HWA']
+                                  .map(
+                                    (disease) => DropdownMenuItem<String>(
+                                      value: disease,
+                                      child: Text(
+                                        disease,
+                                        style: const TextStyle(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.w600, 
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                  .toList(),
+                              onChanged: (value) => setState(() => _selectedDisease = value),
+
+                              // --- Dropdown styling ---
+                              buttonStyleData: const ButtonStyleData(
+                                height: 60,
+                                padding: EdgeInsets.symmetric(horizontal: 2),
+                              ),
+                              dropdownStyleData: DropdownStyleData(
+                                width: 240,
+                                maxHeight: 200,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: Colors.green, width: 1.5),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: 0.12),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 3),
+                                    ),
+                                  ],
+                                ),
+                                offset: const Offset(-18, -10), 
+                              ),
+                              iconStyleData: IconStyleData(
+                                icon: Icon(
+                                  Icons.arrow_drop_down_rounded,
+                                  color: Colors.green[700],
+                                  size: 28,
+                                ),
+                              ),
+                              menuItemStyleData: const MenuItemStyleData(
+                                height: 48,
+                                padding: EdgeInsets.symmetric(horizontal: 16),
+                              ),
+                            ),
+                          ),
+                        ),
+
+                      const SizedBox(height: 24),
+
+                      // ---------- Scan Button ----------
                       ElevatedButton(
-                        onPressed: _isLoading ? null : _scanAndAnalyze,
+                        onPressed: (_isLoading || _selectedDisease == null)
+                            ? null
+                            : _scanAndAnalyze,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.green[700],
-                          padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 24),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 36, vertical: 24),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                           elevation: 6,
                         ),
                         child: _isLoading
@@ -255,7 +360,6 @@ class FileUploadPageState extends State<FileUploadPage> {
                                 ),
                               ),
                       ),
-                      
                       const SizedBox(height: 16),
                     ],
                   ),
@@ -270,9 +374,38 @@ class FileUploadPageState extends State<FileUploadPage> {
   }
 }
 
+
+class AppColors {
+  // Returns the appropriate background color for each classification and confidence
+  static Color getClassificationColor(String predictedClass, double prediction) {
+    // Environment cases — always green
+    if (predictedClass == 'Environment') {
+      return const Color(0xFFE8F5E9);
+    }
+
+    // Sick or Dead cases — color depends on confidence level
+    if (predictedClass == 'Sick' || predictedClass == 'Dead') {
+      if (prediction < 70) {
+        return const Color(0xFFE8F5E9); // light green
+      } else if (prediction < 90) {
+        return const Color(0xFFFFF9C4); // light yellow
+      } else if (prediction < 99.5) {
+        return const Color(0xFFFFE0B2); // light orange
+      } else {
+        return const Color(0xFFFFCDD2); // light red
+      }
+    }
+
+    // Default fallback color (in case of an unexpected class)
+    return Colors.grey.shade200;
+  }
+}
+
+
 class ResultsPage extends StatefulWidget {
   final List<ImageResult> results;
-  const ResultsPage({super.key, required this.results});
+  final String selectedDisease;
+  const ResultsPage({super.key, required this.results, required this.selectedDisease});
 
   @override
   ResultsPageState createState() => ResultsPageState();
@@ -283,21 +416,38 @@ class ResultsPageState extends State<ResultsPage> {
   String selectedFilter = 'All';
   final ScrollController _scrollController = ScrollController();
   
-  // maps displayed categories to proper filtering
-  static const Map<String, String?> filterMap = {
-    'All': null,
-    'No Condition: <70%': 'DOES NOT HAVE OAK WILT',
-    'Possibility: 70-90%': 'POSSIBILITY OF OAK WILT',
-    'High Chance: 90-99.5%': "THERE'S A HIGH CHANCE OF OAK WILT",
-    'Has Condition: >99.5%': 'THIS PICTURE HAS OAK WILT',
-  };
+// Instead of static string mapping, use a Map of predicate functions
+static final Map<String, bool Function(ImageResult)> filterMap = {
+  'All': (_) => true,
+
+  'No Condition: <70%': (item) {
+    final prob = item.prediction;
+    return prob < 70 || item.predictedClass.toLowerCase().contains('environment');
+  },
+
+  'Possibility: 70-90%': (item) {
+    final prob = item.prediction;
+    return prob >= 70 && prob < 90 && !item.predictedClass.toLowerCase().contains('environment');
+  },
+
+  'High Chance: 90-99.5%': (item) {
+    final prob = item.prediction;
+    return prob >= 90 && prob < 99.5 && !item.predictedClass.toLowerCase().contains('environment');
+  },
+
+  'Has Condition or Dead: >99.5%': (item) {
+    final prob = item.prediction;
+    return prob >= 99.5 && !item.predictedClass.toLowerCase().contains('environment');
+  },
+};
 
   // filters results to display desired category
-  List<ImageResult> get filteredResults {
-    final selectedValue = filterMap[selectedFilter];
-    if (selectedValue == null) return widget.results;
-    return widget.results.where((item) => item.classification == selectedValue).toList();
-  }
+List<ImageResult> get filteredResults {
+  final filterFn = filterMap[selectedFilter];
+  if (filterFn == null) return widget.results;
+  return widget.results.where(filterFn).toList();
+}
+
 
   // determines amount of cards on a page
   List<ImageResult> get currentPageItems {
@@ -311,98 +461,99 @@ class ResultsPageState extends State<ResultsPage> {
 
   int get totalPages => (filteredResults.length / AppConstants.pageSize).ceil();
 
-  void _showImagePopup(BuildContext context, ImageResult result) {
+void _showImagePopup(BuildContext context, ImageResult result) {
   final imageUrl = ApiService.getImageUrl(result.filename);
   final alternativeUrl = ApiService.getAlternativeImageUrl(result.filename);
 
-  // displays image popup with interactive viewer
   showDialog(
     context: context,
+    barrierColor: Colors.black.withValues(alpha: 0.5), // dim background
     builder: (_) => Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.all(16),
-      child: Center(
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: Container(
-            constraints: BoxConstraints(
-              maxWidth: MediaQuery.of(context).size.width * 0.9,
-              maxHeight: MediaQuery.of(context).size.height * 0.9,
-            ),
-            decoration: BoxDecoration(
-              color: Colors.white,
+      insetPadding: EdgeInsets.zero, // full screen
+      child: Stack(
+        children: [
+          // Blur everything behind
+          BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
+            child: Container(color: Colors.black.withValues(alpha: 0.2)),
+          ),
+          // Centered image container
+          Center(
+            child: ClipRRect(
               borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Top Bar
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  height: 50,
-                  decoration: const BoxDecoration(
-                    color: Colors.green,
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(16),
-                      topRight: Radius.circular(16),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          result.filename,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          overflow: TextOverflow.ellipsis,
+              child: Container(
+                width: MediaQuery.of(context).size.width * 0.7,
+                height: MediaQuery.of(context).size.height * 0.7,
+                color: Colors.transparent, 
+                child: Stack(
+                  children: [
+                    // Image fills container completely
+                    Positioned.fill(
+                      child: InteractiveViewer(
+                        child: Image.network(
+                          imageUrl,
+                          fit: BoxFit.cover, // fills container without leaving whitespace
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return const Center(
+                                child: CircularProgressIndicator());
+                          },
+                          errorBuilder: (context, error, stackTrace) {
+                            return Image.network(
+                              alternativeUrl,
+                              fit: BoxFit.cover,
+                            );
+                          },
                         ),
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.close, color: Colors.white),
-                        onPressed: () => Navigator.of(context).pop(),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Image Viewer
-                Expanded(
-                  child: InteractiveViewer(
-                    child: Image.network(
-                      imageUrl,
-                      fit: BoxFit.contain,
-                      cacheWidth: 400,
-                      cacheHeight: 400,
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return Center(
-                          child: Padding(
-                            padding: const EdgeInsets.all(32),
-                            child: CircularProgressIndicator(),
-                          ),
-                        );
-                      },
-                      errorBuilder: (context, error, stackTrace) {
-                        return Image.network(
-                          alternativeUrl,
-                          fit: BoxFit.contain,
-                        );
-                      },
                     ),
-                  ),
+                    // Top bar remains
+                    Positioned(
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        height: 50,
+                        decoration: const BoxDecoration(
+                          color: AppConstants.darkGreen,
+                          borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(16),
+                            topRight: Radius.circular(16),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                result.filename,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.close, color: Colors.white),
+                              onPressed: () => Navigator.of(context).pop(),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
-        ),
+        ],
       ),
     ),
   );
 }
-
 
   // results page contents(title, filter dropdown, cards, pagination)
   @override
@@ -418,7 +569,7 @@ class ResultsPageState extends State<ResultsPage> {
         children: [
           Padding(
             padding: const EdgeInsets.all(16.0),
-            child: Column(
+            child: Column( 
               children: [
                 const Center(
                   child: Text(
@@ -473,29 +624,82 @@ class ResultsPageState extends State<ResultsPage> {
             
             // Filter dropdown
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+              width: 260, // match your disease dropdown
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey[300]!),
-                borderRadius: BorderRadius.circular(8),
+                color: Colors.white,
+                border: Border.all(color: Colors.green[700]!, width: 2),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
-              child: DropdownButton<String>(
-                value: selectedFilter,
-                isExpanded: true,
-                underline: const SizedBox.shrink(),
-                items: filterMap.keys.map((label) {
-                  return DropdownMenuItem<String>(
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton2<String>(
+                  isExpanded: true,
+                  value: selectedFilter,
+                  hint: const Text(
+                    'Select Filter',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: AppConstants.primaryGreen,
+                    ),
+                  ),
+                  items: filterMap.keys.map((label) => DropdownMenuItem<String>(
                     value: label,
-                    child: Text(label),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    selectedFilter = value!;
-                    currentPage = 0;
-                  });
-                },
+                    child: Text(
+                      label,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  )).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      selectedFilter = value!;
+                      currentPage = 0;
+                    });
+                  },
+                  buttonStyleData: const ButtonStyleData(
+                    height: 50,
+                    padding: EdgeInsets.symmetric(horizontal: 12),
+                  ),
+                  dropdownStyleData: DropdownStyleData(
+                    maxHeight: 200,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.green, width: 1.5),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.12),
+                          blurRadius: 8,
+                          offset: Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    offset: const Offset(0, -10),
+                  ),
+                  menuItemStyleData: const MenuItemStyleData(
+                    height: 48,
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                  ),
+                  iconStyleData: IconStyleData(
+                    icon: Icon(
+                      Icons.arrow_drop_down_rounded,
+                      color: AppConstants.darkGreen,
+                      size: 28,
+                    ),
+                  ),
+                ),
               ),
             ),
+
             
             const SizedBox(height: 8),
             Text(
@@ -515,42 +719,46 @@ class ResultsPageState extends State<ResultsPage> {
                 physics: const AlwaysScrollableScrollPhysics(),
                 itemCount: currentPageItems.length,
                 itemBuilder: (context, index) {
-                final item = currentPageItems[index];
-                final imageUrl = ApiService.getImageUrl(item.filename);
-                // Card for each result
-                return Card(
-                  margin: const EdgeInsets.symmetric(vertical: 6),
-                  elevation: 2,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              InkWell(
-                                onTap: () => _showImagePopup(context, item),
-                                child: Text(
-                                  item.filename,
-                                  style: const TextStyle(
-                                    color: Colors.blue,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
-                                    decoration: TextDecoration.underline, // optional to show it’s clickable
+                  final item = currentPageItems[index];
+                  final imageUrl = ApiService.getImageUrl(item.filename);
+                  // Card for each result
+                  return Card(
+                    margin: const EdgeInsets.symmetric(vertical: 6),
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    color: AppColors.getClassificationColor(
+                      item.predictedClass,  // or item.classification depending on your model
+                      item.prediction,
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                InkWell(
+                                  onTap: () => _showImagePopup(context, item),
+                                  child: Text(
+                                    item.filename,
+                                    style: const TextStyle(
+                                      color: Colors.blue,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500,
+                                      decoration: TextDecoration.underline,  
+                                    ),
                                   ),
                                 ),
-                              ),
                               const SizedBox(height: 8),
                               
                               // Classification and prediction
                               Text(
-                                '${item.classification} - ${item.prediction}',
+                                '${item.classification}: Confidence - ${item.prediction.toStringAsFixed( 2 )}%',
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  color: AppConstants.primaryGreen,
+                                  color: Colors.black,
                                   fontSize: 14,
                                 ),
                               ),
