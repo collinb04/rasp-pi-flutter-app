@@ -33,7 +33,7 @@ nohup python3 -m http.server 8080 > ../../http_server.log 2>&1 &
 sleep 2
 
 echo "[+] Starting Chromium in kiosk mode..."
-DISPLAY=:0 exec chromium-browser --kiosk http://localhost:8080 --noerrdialogs --disable-infobars --no-sandbox --disable-cache
+DISPLAY=:0 exec chromium --kiosk http://localhost:8080 --noerrdialogs --disable-infobars --no-sandbox --disable-cache
 
 echo "[✓] App running in kiosk mode"
 
