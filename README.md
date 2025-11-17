@@ -1,5 +1,7 @@
 # Raspberry Pi Setup Guide – Edge Forestry Flutter App
 
+MODELS ARE NOT INCLUDED AND PROPRIETARY TO EDGE FORESTRY AI
+
 ## Introduction
 This guide provides a step-by-step walkthrough for setting up the **Edge Forestry Flutter Application** on a **Raspberry Pi 4**.  
 It covers hardware assembly, OS installation, dependency setup, and service configuration.  
